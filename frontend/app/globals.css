@@ -1,0 +1,76 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600;700&family=Be+Vietnam+Pro:wght@100;300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-background: #fdf9f0;
+  --color-surface: #fdf9f0;
+  --color-surface-dim: #dedad1;
+  --color-surface-container-low: #f7f3ea;
+  --color-surface-container: #f2ede4;
+  --color-surface-container-high: #ece8df;
+  --color-surface-container-highest: #e6e2d9;
+  
+  --color-on-surface: #1c1c16;
+  --color-on-surface-variant: #444844;
+  --color-outline-variant: #c5c7c2;
+  
+  --color-primary: #5d5f5c;
+  --color-secondary: #0024c0;
+  --color-secondary-container: #0033fe;
+  --color-secondary-fixed-dim: #bcc3ff;
+  
+  --color-tertiary: #ae3200;
+  --color-tertiary-container: #fff2ef;
+  
+  --font-display: "Bebas Neue", cursive;
+  --font-tech: "Space Grotesk", sans-serif;
+  --font-body: "Be Vietnam Pro", sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-on-surface font-body antialiased;
+  }
+}
+
+@layer components {
+  .glass-card {
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(197, 199, 194, 0.3);
+  }
+  
+  .holographic-sweep {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .holographic-sweep::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -100%;
+    width: 50%;
+    height: 200%;
+    background: linear-gradient(to right, transparent, rgba(255,255,255,0.3), transparent);
+    transform: rotate(30deg);
+    transition: left 0.6s ease;
+  }
+  
+  .holographic-sweep:hover::after {
+    left: 150%;
+  }
+
+  .chrome-effect {
+    background: linear-gradient(135deg, #e2e3df 0%, #ffffff 100%);
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.8), 0 2px 4px rgba(0,0,0,0.05);
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
