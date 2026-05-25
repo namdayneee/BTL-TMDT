@@ -38,11 +38,6 @@ Chức năng:
 - JWT
 - role check
 
-APIs
-POST /auth/register
-POST /auth/login
-GET  /auth/me
-
 B. Product Service
 Chức năng:
 - product listing
@@ -50,24 +45,12 @@ Chức năng:
 - inventory
 - smart sizing basic
 
-APIs
-GET /products
-GET /products/:id
-POST /products
-PATCH /products/:id
-
 C. Order Service
 Chức năng:
 - cart
 - checkout
 - order tracking
 - payment mock
-
-APIs
-POST /cart
-GET  /cart
-POST /checkout
-GET  /orders/:id
 
 D. Realtime Service
 Socket.IO
