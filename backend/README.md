@@ -86,12 +86,27 @@ vault-backend/
 
 ## API
 Auth
-/api/auth/register
-/api/auth/login
-/api/auth/me
+POST    /api/auth/register
+POST    /api/auth/login
+GET     /api/auth/me
 
 Product
-/api/products
+GET    /api/products
+GET    /api/products/:id
+POST   /api/products
+PUT    /api/products/:id
+DELETE /api/products/:id
+
+Cart
+GET    /api/cart
+POST   /api/cart
+DELETE /api/cart/:itemId
+
+Sizing Rule
+POST    /api/sizing/rules
+
+Review
+POST    /api/reviews
+GET     /api/reviews/:id
 
 Order
-/api/orders
