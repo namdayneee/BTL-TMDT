@@ -1,14 +1,18 @@
 import express from "express";
+
 import cors from "cors";
 
 import productRoutes from "./routes/product.routes.js";
 
+import reviewRoutes from "./routes/review.routes.js";
+
+import sizingRoutes from "./routes/sizing.routes.js";
+
 const app = express();
 
 app.use(cors());
-app.use(express.json());
 
-app.use("/uploads", express.static("uploads"));
+app.use(express.json());
 
 app.get("/", (req, res) => {
   res.json({
@@ -17,5 +21,9 @@ app.get("/", (req, res) => {
 });
 
 app.use("/products", productRoutes);
+
+app.use("/reviews", reviewRoutes);
+
+app.use("/sizing", sizingRoutes);
 
 export default app;

@@ -11,7 +11,7 @@ router.use(
     changeOrigin: true,
 
     pathRewrite: (path) => {
-      return `/products${path}`;
+      return `/reviews${path}`;
     },
 
     proxyTimeout: 5000,

@@ -6,12 +6,12 @@ const router = express.Router();
 
 router.use(
   createProxyMiddleware({
-    target: "http://localhost:3002",
+    target: "http://localhost:3003",
 
     changeOrigin: true,
 
     pathRewrite: (path) => {
-      return `/products${path}`;
+      return `/cart${path}`;
     },
 
     proxyTimeout: 5000,
