@@ -16,4 +16,10 @@ router.post("/login", login);
 
 router.get("/me", authenticate, getMe);
 
+router.get("/ping", (req, res) => {
+  res.json({
+    message: "pong",
+  });
+});
+
 export default router;

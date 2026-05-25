@@ -100,3 +100,15 @@ vault-backend/
 - Product : 3002
 - Order   : 3003
 - Realtime: 3004
+
+## API
+Auth
+/api/auth/register
+/api/auth/login
+/api/auth/me
+
+Product
+/api/products
+
+Order
+/api/orders

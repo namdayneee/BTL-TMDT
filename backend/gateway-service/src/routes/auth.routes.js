@@ -3,13 +3,21 @@ import { createProxyMiddleware } from "http-proxy-middleware";
 
 const router = express.Router();
 
-console.log(process.env.AUTH_SERVICE_URL);
-
 router.use(
-  "/",
   createProxyMiddleware({
-    target: process.env.AUTH_SERVICE_URL,
+    target: "http://localhost:3001",
+
     changeOrigin: true,
+
+    pathRewrite: {
+      "^/": "/auth/",
+    },
+
+    proxyTimeout: 5000,
+
+    onProxyReq: (proxyReq, req, res) => {
+      console.log("Proxying:", req.method, req.originalUrl);
+    },
   })
 );
 
