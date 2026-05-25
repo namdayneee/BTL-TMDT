@@ -78,7 +78,20 @@ inventory update
 admin notification
 
 # REPO Stucture
-
+vault-backend/
+│
+├── gateway/
+├── auth-service/
+├── product-service/
+├── order-service/
+├── realtime-service/
+│
+├── shared/
+│   ├── utils/
+│   ├── middleware/
+│   └── types/
+│
+└── package.json
 
 ## Services
 
