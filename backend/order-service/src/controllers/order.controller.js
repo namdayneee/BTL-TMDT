@@ -98,6 +98,14 @@ export const updateStatus = async (
         status
       );
 
+    global.io.to(`order-${order.id}`).emit(
+    "order-status-updated",
+    {
+      orderId: order.id,
+      status: order.status,
+    }
+  );
+
     res.json(order);
   } catch (error) {
     res.status(500).json({

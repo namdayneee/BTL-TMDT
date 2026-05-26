@@ -113,3 +113,8 @@ Order
 POST    /api/orders/checkout (check out tính tổng tiền giỏ hàng và xóa giỏ hàng)
 GET     /api/orders/my-orders
 PATCH   /api/orders/:id/status (sửa giữa các trạng thái: "pending", "confirmed", "shipping", "delivered", "cancelled",)
+
+Admin
+GET     /api/admin/stats
+GET     /api/admin/orders
+GET     /api/admin/products
