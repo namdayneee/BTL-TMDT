@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 
 import cartRoutes from "./routes/cart.routes.js";
+import orderRoutes from "./routes/order.routes.js";
 
 const app = express();
 
@@ -16,5 +17,6 @@ app.get("/", (req, res) => {
 });
 
 app.use("/cart", cartRoutes);
+app.use("/orders", orderRoutes);
 
 export default app;

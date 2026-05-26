@@ -6,6 +6,7 @@ import {
   getProduct,
   updateProduct,
   deleteProduct,
+  getVariantById,
 } from "../controllers/product.controller.js";
 
 import { authenticate } from "../middleware/auth.middleware.js";
@@ -17,6 +18,11 @@ const router = express.Router();
 router.get("/", getProducts);
 
 router.get("/:id", getProduct);
+
+router.get(
+  "/variants/:id",
+  getVariantById
+);
 
 router.post(
   "/",

@@ -1,4 +1,5 @@
 import * as productService from "../services/product.service.js";
+import prisma from "../utils/prisma.js";
 
 export const createProduct = async (req, res) => {
   try {
@@ -66,6 +67,36 @@ export const deleteProduct = async (req, res) => {
     res.json({
       message: "Product deleted",
     });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+};
+
+export const getVariantById = async (
+  req,
+  res
+) => {
+  try {
+    const variant =
+      await prisma.productVariant.findUnique({
+        where: {
+          id: Number(req.params.id),
+        },
+
+        include: {
+          product: true,
+        },
+      });
+
+    if (!variant) {
+      return res.status(404).json({
+        message: "Variant not found",
+      });
+    }
+
+    res.json(variant);
   } catch (error) {
     res.status(500).json({
       message: error.message,

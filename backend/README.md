@@ -110,3 +110,5 @@ POST    /api/reviews
 GET     /api/reviews/:id
 
 Order
+POST    /api/orders/checkout (check out tính tổng tiền giỏ hàng và xóa giỏ hàng)
+GET     /api/orders/my-orders

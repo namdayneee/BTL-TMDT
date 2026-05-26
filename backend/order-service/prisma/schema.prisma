@@ -28,7 +28,7 @@ model CartItem {
 model Order {
   id         Int         @id @default(autoincrement())
   userId     Int
-  totalPrice Float
+  totalAmount Float
   status     String      @default("PENDING")
   createdAt  DateTime    @default(now())
   items      OrderItem[]
