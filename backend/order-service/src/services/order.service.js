@@ -93,3 +93,16 @@ export const getMyOrders = async (
     },
   });
 };
+
+export const updateOrderStatus =
+  async (orderId, status) => {
+    return prisma.order.update({
+      where: {
+        id: Number(orderId),
+      },
+
+      data: {
+        status,
+      },
+    });
+  };

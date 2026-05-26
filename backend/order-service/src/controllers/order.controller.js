@@ -68,3 +68,40 @@ export const checkPurchased = async (
     });
   }
 };
+
+export const updateStatus = async (
+  req,
+  res
+) => {
+  try {
+    const { status } = req.body;
+
+    const allowedStatuses = [
+      "pending",
+      "confirmed",
+      "shipping",
+      "delivered",
+      "cancelled",
+    ];
+
+    if (
+      !allowedStatuses.includes(status)
+    ) {
+      return res.status(400).json({
+        message: "Invalid status",
+      });
+    }
+
+    const order =
+      await orderService.updateOrderStatus(
+        req.params.id,
+        status
+      );
+
+    res.json(order);
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+};

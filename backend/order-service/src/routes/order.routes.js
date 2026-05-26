@@ -4,9 +4,13 @@ import {
   checkout,
   getMyOrders,
   checkPurchased,
+  updateStatus,
 } from "../controllers/order.controller.js";
 
-import { authenticate } from "../middleware/auth.middleware.js";
+import { 
+  authenticate,
+  authorize,
+ } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
@@ -26,6 +30,16 @@ router.get(
   "/check-purchased/:variantId",
   authenticate,
   checkPurchased
+);
+
+router.patch(
+  "/:id/status",
+
+  authenticate,
+
+  authorize("admin"),
+
+  updateStatus
 );
 
 export default router;
