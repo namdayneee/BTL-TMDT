@@ -10,7 +10,7 @@ interface HeaderProps {
 
 const navLinks = [
   { label: 'Trang chủ', path: '/' },
-  { label: 'Sản phẩm', path: '/product/vt-99281' },
+  { label: 'Sản phẩm', path: '/product' },
   { label: 'Đơn hàng', path: '/orders' },
   { label: 'Hồ sơ', path: '/profile' },
 ];

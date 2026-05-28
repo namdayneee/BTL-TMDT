@@ -1,21 +1,29 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import Header from '../../components/Header';
 import { ShoppingCart, CheckCircle, Ruler, Info, QrCode } from 'lucide-react';
+import { getProductById, products } from '../../data/products';
 
 export default function ProductDetail() {
   const [size, setSize] = useState('XL');
   const router = useRouter();
+  const params = useParams();
+  const product = getProductById(params.id as string) ?? products[0];
+
+  const priceShort = product.price.replace('.000₫', 'k');
 
   const addToCartButton = (
     <button
       onClick={() => router.push('/cart')}
-      className="w-full h-16 bg-secondary text-white rounded-full flex items-center justify-center space-x-4 shadow-2xl shadow-secondary/30 active:scale-[0.98] transition-all holographic-sweep"
+      className="w-full h-16 bg-secondary text-white rounded-full flex items-center justify-center space-x-4 shadow-2xl shadow-secondary/30 active:scale-[0.98] transition-all holographic-sweep disabled:opacity-50"
+      disabled={!product.inStock}
     >
       <ShoppingCart size={20} />
-      <span className="font-tech text-xs font-bold uppercase tracking-[0.2em]">THÊM VÀO GIỎ HÀNG — 1.250k</span>
+      <span className="font-tech text-xs font-bold uppercase tracking-[0.2em]">
+        {product.inStock ? `THÊM VÀO GIỎ HÀNG — ${priceShort}` : 'HẾT HÀNG'}
+      </span>
     </button>
   );
 
@@ -31,8 +39,8 @@ export default function ProductDetail() {
             <div className="flex-none w-full h-full snap-start relative">
               <img
                 className="w-full h-full object-cover"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBxkuxSdrjwJRrbpdPgF1GlZOqmEevAVb3meHHXKtO2SfeNS92IjIuqJTbuBzArqB3Ugurh6YuO2uWpQhyhxl7BsaxgF8KsaSmVnVqAZHX8XB0-P-CAGKfb67Q6MM0-X5zolBqxjJfas1AF0-GNeyogtg-DPcTlWxBN6ltlNFQtgXVXqTkJY_as7v4e80Fn4JPRIJDXBx9MHFCqrhAr_OeMo9_UdCD3cyjIuzOvzZIuTZaR6hq4UESqq1MTSw1lJJirJAW4K-ybdj_S"
-                alt="Product"
+                src={product.img}
+                alt={product.name}
               />
             </div>
           </div>
@@ -55,19 +63,21 @@ export default function ProductDetail() {
             <section className="mt-8">
               <div className="flex justify-between items-start mb-4">
                 <h1 className="font-display text-4xl lg:text-5xl leading-none text-on-surface uppercase tracking-tight max-w-[70%]">
-                  ÁO HOODIE VAULT CORE - COTTON CAO CẤP
+                  {product.name}
                 </h1>
-                <span className="font-tech text-secondary bg-secondary-fixed-dim/30 px-2 py-1 rounded text-[10px] font-bold uppercase">CÒN HÀNG</span>
+                <span className={`font-tech px-2 py-1 rounded text-[10px] font-bold uppercase ${product.inStock ? 'text-secondary bg-secondary-fixed-dim/30' : 'text-tertiary bg-tertiary-container'}`}>
+                  {product.inStock ? 'CÒN HÀNG' : 'HẾT HÀNG'}
+                </span>
               </div>
 
               <div className="flex items-baseline space-x-3 mb-6">
-                <span className="text-on-surface font-display text-3xl">1.250.000 VND</span>
+                <span className="text-on-surface font-display text-3xl">{product.price}</span>
               </div>
 
               <div className="p-4 glass-card rounded-xl border-secondary/20 bg-secondary/5 flex items-center justify-between mb-8">
                 <div>
                   <p className="font-tech text-[10px] text-secondary uppercase tracking-[0.2em] mb-1 font-bold">Giá thành viên</p>
-                  <p className="font-display text-2xl text-secondary">1.050.000 VND</p>
+                  <p className="font-display text-2xl text-secondary">{Math.round(product.priceNum * 0.85).toLocaleString('vi-VN')} VND</p>
                 </div>
                 <button className="bg-secondary text-white px-5 py-2.5 rounded-full font-tech text-[10px] uppercase tracking-widest font-bold active:scale-95 transition-all">
                   THAM GIA NGAY
@@ -79,7 +89,7 @@ export default function ProductDetail() {
                 <div>
                   <h3 className="font-tech text-[10px] text-on-surface-variant uppercase mb-4 tracking-widest">Màu sắc: Phantom</h3>
                   <div className="flex space-x-3">
-                    {['#2a2a2a', '#0033fe', '#f5f5f1'].map((c, i) => (
+                    {product.colors.map((c, i) => (
                       <button key={c} className={`w-8 h-8 rounded-full border-2 ${i === 0 ? 'border-secondary' : 'border-outline-variant'} p-0.5`}>
                         <div className="w-full h-full rounded-full" style={{ backgroundColor: c }}></div>
                       </button>
@@ -161,10 +171,10 @@ export default function ProductDetail() {
               </h3>
               <div className="border-t border-outline-variant/20 pt-8 grid grid-cols-2 gap-x-6 gap-y-8">
                 {[
-                  { l: 'Định lượng vải', v: '450 GSM' },
-                  { l: 'Chất liệu', v: '100% Cotton' },
-                  { l: 'Kiểu dáng', v: 'Oversized' },
-                  { l: 'Chi tiết', v: 'Vai trễ (Dropped Shoulders)' }
+                  { l: 'Định lượng vải', v: product.gsm ?? '—' },
+                  { l: 'Chất liệu', v: product.fabric },
+                  { l: 'Kiểu dáng', v: product.fit },
+                  { l: 'Danh mục', v: product.category.toUpperCase() }
                 ].map(item => (
                   <div key={item.l}>
                     <span className="font-tech text-[10px] text-on-surface-variant uppercase mb-1 tracking-widest block">{item.l}</span>
@@ -196,6 +206,38 @@ export default function ProductDetail() {
             <div className="hidden lg:block mt-10 pb-2">
               {addToCartButton}
             </div>
+
+            {/* Related Products */}
+            <section className="mt-16 pb-8">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-display text-2xl uppercase">Có thể bạn thích</h3>
+                <button
+                  onClick={() => router.push('/product')}
+                  className="font-tech text-[10px] text-secondary uppercase tracking-widest border-b border-secondary pb-0.5"
+                >
+                  Xem tất cả
+                </button>
+              </div>
+              <div className="flex overflow-x-auto gap-4 pb-4 no-scrollbar snap-x">
+                {products.filter(p => p.id !== product.id).slice(0, 4).map(p => (
+                  <div
+                    key={p.id}
+                    onClick={() => router.push(`/product/${p.id}`)}
+                    className="shrink-0 w-44 cursor-pointer group snap-start"
+                  >
+                    <div className="aspect-3/4 bg-surface-container-high rounded-xl overflow-hidden mb-3">
+                      <img
+                        src={p.img}
+                        alt={p.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    </div>
+                    <p className="font-tech text-xs font-bold text-on-surface uppercase truncate">{p.name}</p>
+                    <p className="font-tech text-xs text-secondary mt-0.5">{p.price}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
           </div>
         </div>
       </div>
