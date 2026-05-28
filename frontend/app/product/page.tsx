@@ -104,9 +104,9 @@ export default function ProductsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header title="Sản phẩm" showBack />
+      <Header />
 
-      <main className="pt-16">
+      <main className="pt-24">
         {/* Page Hero */}
         <section className="px-5 md:px-10 lg:px-16 pt-10 pb-6 max-w-7xl mx-auto">
           <motion.div

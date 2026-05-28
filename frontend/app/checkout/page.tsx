@@ -51,7 +51,7 @@ export default function Checkout() {
 
   return (
     <div className="min-h-screen bg-background pb-32 lg:pb-16">
-      <Header title="THANH TOÁN" showBack />
+      <Header title="THANH TOÁN" />
 
       <main className="pt-24 px-5 md:px-8 lg:px-12 max-w-7xl mx-auto">
 
