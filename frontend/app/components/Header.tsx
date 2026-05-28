@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Menu, ShoppingBag, ArrowLeft, User, X } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { clearToken, fetchCurrentUser, getStoredToken } from '../lib/auth-client';
+import { useCart } from '../context/CartContext';
 
 interface HeaderProps {
   title?: string;
@@ -20,6 +21,7 @@ const navLinks = [
 export default function Header({ title, showBack }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const { itemCount, refreshCart } = useCart();
   const [showAuthSelect, setShowAuthSelect] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isOpen, setIsOpen] = useState(false); // State quản lý trạng thái đóng/mở menu mobile
@@ -35,6 +37,7 @@ export default function Header({ title, showBack }: HeaderProps) {
       try {
         await fetchCurrentUser(token);
         setIsAuthenticated(true);
+        await refreshCart();
       } catch {
         clearToken();
         setIsAuthenticated(false);
@@ -42,7 +45,7 @@ export default function Header({ title, showBack }: HeaderProps) {
     };
 
     void validateAuth();
-  }, [pathname]);
+  }, [pathname, refreshCart]);
 
   const handleAuthAction = (action: 'login' | 'logout') => {
     if (action === 'login') {
@@ -50,6 +53,7 @@ export default function Header({ title, showBack }: HeaderProps) {
     } else {
       clearToken();
       setIsAuthenticated(false);
+      void refreshCart();
       router.push('/');
     }
     setShowAuthSelect(false);
@@ -175,9 +179,9 @@ export default function Header({ title, showBack }: HeaderProps) {
               className="text-zinc-900 relative active:scale-95 transition-transform duration-200"
             >
               <ShoppingBag size={24} />
-              {pathname !== '/cart' && pathname !== '/checkout' && (
-                <span className="absolute -top-1 -right-1 bg-zinc-900 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
-                  2
+              {itemCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-zinc-900 text-white text-[10px] min-w-4 h-4 px-0.5 rounded-full flex items-center justify-center font-bold">
+                  {itemCount > 99 ? '99+' : itemCount}
                 </span>
               )}
             </button>

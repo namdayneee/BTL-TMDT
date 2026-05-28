@@ -4,11 +4,62 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '../components/Header';
 import { Rocket, ShieldCheck, Trophy, Ruler } from 'lucide-react';
-import { clearToken, fetchCurrentUser, getStoredToken } from '../lib/auth-client';
+import {
+  clearToken,
+  displayNameFromEmail,
+  fetchMe,
+  getStoredToken,
+  roleBadgeLabel,
+  type AuthUser,
+} from '../lib/auth-client';
+import { fetchMyOrders } from '../lib/order-api';
+import { fetchVariantById } from '../lib/product-api';
+import { getOrderStatusDisplay } from '../lib/order-utils';
+import type { ApiOrder } from '../lib/types';
+
+type OrderPreview = {
+  id: string;
+  name: string;
+  img: string;
+  statusLabel: string;
+  statusBg: string;
+  statusText: string;
+};
+
+async function buildOrderPreview(order: ApiOrder | undefined): Promise<OrderPreview | null> {
+  if (!order) return null;
+
+  const firstItem = order.items[0];
+  let name = 'Sản phẩm Vault';
+  let img = '/images/products/pro1.png';
+
+  if (firstItem) {
+    try {
+      const variant = await fetchVariantById(firstItem.variantId);
+      name = variant.product.name;
+      img = variant.product.thumbnail || img;
+    } catch {
+      name = `Sản phẩm #${firstItem.variantId}`;
+    }
+  }
+
+  const statusDisplay = getOrderStatusDisplay(order.status);
+
+  return {
+    id: `VT-${order.id}`,
+    name,
+    img,
+    statusLabel: statusDisplay.label,
+    statusBg: statusDisplay.statusBg,
+    statusText: statusDisplay.statusText,
+  };
+}
 
 export default function Profile() {
   const router = useRouter();
   const [authState, setAuthState] = useState<'checking' | 'authenticated' | 'unauthenticated'>('checking');
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [latestOrder, setLatestOrder] = useState<OrderPreview | null>(null);
 
   useEffect(() => {
     const validateAccess = async () => {
@@ -20,8 +71,17 @@ export default function Profile() {
       }
 
       try {
-        await fetchCurrentUser(token);
+        const currentUser = await fetchMe();
+        setUser(currentUser);
         setAuthState('authenticated');
+
+        try {
+          const orders = await fetchMyOrders();
+          const preview = await buildOrderPreview(orders[0]);
+          setLatestOrder(preview);
+        } catch {
+          setLatestOrder(null);
+        }
       } catch {
         clearToken();
         setAuthState('unauthenticated');
@@ -76,9 +136,12 @@ export default function Profile() {
               <ShieldCheck size={14} className="fill-current" />
             </div>
           </div>
-          <h1 className="mt-6 font-display text-4xl md:text-5xl uppercase tracking-widest text-on-surface">KHANH NGUYEN</h1>
+          <h1 className="mt-6 font-display text-4xl md:text-5xl uppercase tracking-widest text-on-surface">
+            {user ? displayNameFromEmail(user.email) : '—'}
+          </h1>
+          <p className="mt-2 font-body text-sm text-on-surface-variant">{user?.email}</p>
           <div className="mt-2 text-secondary bg-secondary/10 px-4 py-1.5 rounded-full border border-secondary/20 font-tech text-[10px] font-bold uppercase tracking-widest">
-            THÀNH VIÊN HẠNG BLACK
+            {user ? roleBadgeLabel(user.role) : 'THÀNH VIÊN HẠNG BLACK'}
           </div>
         </section>
 
@@ -197,22 +260,38 @@ export default function Profile() {
                 </button>
               </div>
               <div className="space-y-3">
-                <div className="bg-surface-container-low/50 p-4 rounded-2xl flex justify-between items-center border border-outline-variant/10">
-                  <div className="flex gap-4 items-center">
-                    <div className="w-12 h-14 bg-surface-container rounded-xl overflow-hidden">
-                      <img
-                        className="w-full h-full object-cover"
-                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-65U2l7oMqaR0oKbjh3k5ldICkdWSt-bYTQyIIYZwzZrmsyYqvs4neMwhUeaM1NGitAfxsxv0ubzeE0c6c6Jby46dFDbBPaQL03fMNwnW-ByQMIlq6OUgyywUQT_X_0pB7znpdls5Op5L0uGqL_q5bP1Sff9RrRvFKFle4JLmRFpCvnjsIKnSxf01J3WDys5r93h0KDV7SzN-S-RWjT7qxvxs4OCvXCJmvkkNudmgUxpRR62a5cH-rLR8L7UBU2P-uDL-DNwjJzDL"
-                        alt="Product"
-                      />
+                {latestOrder ? (
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/order/${latestOrder.id.replace('VT-', '')}`)}
+                    className="w-full bg-surface-container-low/50 p-4 rounded-2xl flex justify-between items-center border border-outline-variant/10 hover:border-secondary/30 transition-colors text-left"
+                  >
+                    <div className="flex gap-4 items-center">
+                      <div className="w-12 h-14 bg-surface-container rounded-xl overflow-hidden">
+                        <img
+                          className="w-full h-full object-cover"
+                          src={latestOrder.img}
+                          alt={latestOrder.name}
+                        />
+                      </div>
+                      <div>
+                        <p className="font-tech text-[10px] font-bold uppercase">{latestOrder.name}</p>
+                        <p className="font-tech text-[9px] text-on-surface-variant opacity-60">
+                          #{latestOrder.id}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-tech text-[10px] font-bold uppercase">V-SHIELD SNKR</p>
-                      <p className="font-tech text-[9px] text-on-surface-variant opacity-60">#VT-99281</p>
-                    </div>
-                  </div>
-                  <span className="text-[8px] font-bold tracking-widest px-2.5 py-1 rounded-full uppercase bg-secondary/10 text-secondary border border-secondary/20">Đang giao</span>
-                </div>
+                    <span
+                      className={`text-[8px] font-bold tracking-widest px-2.5 py-1 rounded-full uppercase ${latestOrder.statusBg} ${latestOrder.statusText}`}
+                    >
+                      {latestOrder.statusLabel}
+                    </span>
+                  </button>
+                ) : (
+                  <p className="font-body text-sm text-on-surface-variant text-center py-6 opacity-70">
+                    Chưa có đơn hàng nào.
+                  </p>
+                )}
               </div>
             </section>
           </div>

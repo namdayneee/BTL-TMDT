@@ -70,3 +70,54 @@ export const deleteProduct = async (id) => {
     },
   });
 };
+
+export const decrementStockBatch = async (items) => {
+  return prisma.$transaction(async (tx) => {
+    const updated = [];
+
+    for (const item of items) {
+      const variant = await tx.productVariant.findUnique({
+        where: { id: Number(item.variantId) },
+        include: { product: true },
+      });
+
+      if (!variant) {
+        throw new Error(`Variant ${item.variantId} not found`);
+      }
+
+      if (variant.stock < item.quantity) {
+        throw new Error(
+          `Không đủ tồn kho: ${variant.product.name} (size ${variant.size}) chỉ còn ${variant.stock}`
+        );
+      }
+
+      const result = await tx.productVariant.update({
+        where: { id: variant.id },
+        data: {
+          stock: {
+            decrement: Number(item.quantity),
+          },
+        },
+      });
+
+      updated.push(result);
+    }
+
+    return updated;
+  });
+};
+
+export const restoreStockBatch = async (items) => {
+  return prisma.$transaction(
+    items.map((item) =>
+      prisma.productVariant.update({
+        where: { id: Number(item.variantId) },
+        data: {
+          stock: {
+            increment: Number(item.quantity),
+          },
+        },
+      })
+    )
+  );
+};

@@ -22,7 +22,21 @@ type RegisterResponse = {
   };
 };
 
+export type AuthUser = {
+  id: number;
+  email: string;
+  role: string;
+  createdAt: string;
+};
+
+function assertAuthEnv() {
+  if (!AUTH_SERVICE_URL || !AUTH_LOGIN_PATH || !AUTH_REGISTER_PATH || !AUTH_ME_PATH) {
+    throw new Error('Biến auth chưa được cấu hình đầy đủ trong .env');
+  }
+}
+
 export async function loginWithPassword(email: string, password: string): Promise<LoginResponse> {
+  assertAuthEnv();
   const response = await fetch(`${AUTH_SERVICE_URL}${AUTH_LOGIN_PATH}`, {
     method: "POST",
     headers: {
@@ -44,6 +58,7 @@ export async function loginWithPassword(email: string, password: string): Promis
 }
 
 export async function registerWithPassword(email: string, password: string): Promise<RegisterResponse> {
+  assertAuthEnv();
   const response = await fetch(`${AUTH_SERVICE_URL}${AUTH_REGISTER_PATH}`, {
     method: "POST",
     headers: {
@@ -64,7 +79,8 @@ export async function registerWithPassword(email: string, password: string): Pro
   return data as RegisterResponse;
 }
 
-export async function fetchCurrentUser(token: string) {
+export async function fetchCurrentUser(token: string): Promise<AuthUser> {
+  assertAuthEnv();
   const response = await fetch(`${AUTH_SERVICE_URL}${AUTH_ME_PATH}`, {
     method: "GET",
     headers: {
@@ -76,7 +92,25 @@ export async function fetchCurrentUser(token: string) {
     throw new Error("Token không hợp lệ");
   }
 
-  return response.json();
+  return response.json() as Promise<AuthUser>;
+}
+
+export async function fetchMe(): Promise<AuthUser> {
+  const token = getStoredToken();
+  if (!token) {
+    throw new Error("Unauthorized");
+  }
+  return fetchCurrentUser(token);
+}
+
+export function displayNameFromEmail(email: string): string {
+  const local = email.split("@")[0] ?? email;
+  return local.replace(/[._-]/g, " ").trim().toUpperCase();
+}
+
+export function roleBadgeLabel(role: string): string {
+  if (role === "admin") return "QUẢN TRỊ VIÊN";
+  return "THÀNH VIÊN HẠNG BLACK";
 }
 
 export function getStoredToken() {

@@ -7,6 +7,8 @@ import {
   updateProduct,
   deleteProduct,
   getVariantById,
+  decrementStockBatch,
+  restoreStockBatch,
 } from "../controllers/product.controller.js";
 
 import { authenticate } from "../middleware/auth.middleware.js";
@@ -17,12 +19,22 @@ const router = express.Router();
 
 router.get("/", getProducts);
 
-router.get("/:id", getProduct);
+router.post(
+  "/variants/stock/decrement",
+  decrementStockBatch
+);
+
+router.post(
+  "/variants/stock/restore",
+  restoreStockBatch
+);
 
 router.get(
   "/variants/:id",
   getVariantById
 );
+
+router.get("/:id", getProduct);
 
 router.post(
   "/",

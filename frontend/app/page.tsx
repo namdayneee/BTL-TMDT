@@ -1,11 +1,13 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { useRouter } from 'next/navigation';
 import Header from './components/Header';
-import { ShoppingCart, Ruler, Star, Lock, Heart, Users } from 'lucide-react';
-import { products } from './data/products';
-import type { Product } from './data/products';
+import ProductCard from './components/ProductCard';
+import { Ruler, Star, Lock, Heart, Users } from 'lucide-react';
+import { fetchProducts } from './lib/product-api';
+import { mapApiProduct, type DisplayProduct } from './lib/types';
 
 const communityPosts = [
   {
@@ -48,46 +50,21 @@ const lookbookImages = [
   },
 ];
 
-function ProductCard({ p, onClick }: { p: Product; onClick: () => void }) {
-  return (
-    <motion.div
-      whileHover={{ scale: 0.98 }}
-      onClick={onClick}
-      className="cursor-pointer shrink-0 min-w-75 md:min-w-0 snap-center md:snap-align-none"
-    >
-      <div className="relative aspect-3/4 bg-surface-container-high overflow-hidden rounded-xl group">
-        <img
-          src={p.img}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-          alt={p.name}
-        />
-        <div className="absolute top-4 left-4 flex flex-col gap-2">
-          {p.badges.map(b => (
-            <span
-              key={b}
-              className={`${b === 'MỚI' ? 'bg-secondary text-white' : 'glass-card'} text-[10px] font-bold px-3 py-1 rounded-full uppercase`}
-            >
-              {b}
-            </span>
-          ))}
-        </div>
-        <button className="absolute bottom-4 right-4 bg-white/90 p-3 rounded-full shadow-lg active:scale-90 transition-transform">
-          <ShoppingCart size={20} className="text-secondary" />
-        </button>
-      </div>
-      <div className="mt-4 flex justify-between">
-        <div>
-          <h4 className="font-tech text-base lg:text-lg font-bold text-on-surface uppercase">{p.name}</h4>
-          <p className="font-body text-sm text-on-surface-variant">{p.desc}</p>
-        </div>
-        <p className="font-tech text-sm font-bold text-secondary">{p.price}</p>
-      </div>
-    </motion.div>
-  );
-}
-
 export default function Home() {
   const router = useRouter();
+  const [products, setProducts] = useState<DisplayProduct[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await fetchProducts();
+        setProducts(data.map(mapApiProduct).slice(0, 8));
+      } catch {
+        setProducts([]);
+      }
+    };
+    void load();
+  }, []);
 
   return (
     <div className="min-h-screen">
@@ -155,7 +132,7 @@ export default function Home() {
           <motion.button
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => router.push('/product/vt-99281')}
+            onClick={() => router.push(products[0] ? `/product/${products[0].id}` : '/product')}
             className="bg-secondary text-white px-8 py-4 rounded-lg font-tech text-xs uppercase tracking-widest shadow-xl flex-1 md:flex-none md:min-w-45 hover:opacity-90 transition-all"
           >
             Sắm Ngay
@@ -189,14 +166,14 @@ export default function Home() {
         {/* Mobile: horizontal scroll */}
         <div className="md:hidden flex overflow-x-auto gap-5 px-5 pb-8 no-scrollbar snap-x snap-mandatory">
           {products.map(p => (
-            <ProductCard key={p.id} p={p} onClick={() => router.push(`/product/${p.id}`)} />
+            <ProductCard key={p.id} product={p} layout="carousel" onClick={() => router.push(`/product/${p.id}`)} />
           ))}
         </div>
 
         {/* Desktop: grid */}
         <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-10 lg:px-16 max-w-7xl mx-auto pb-8">
           {products.map(p => (
-            <ProductCard key={p.id} p={p} onClick={() => router.push(`/product/${p.id}`)} />
+            <ProductCard key={p.id} product={p} layout="carousel" onClick={() => router.push(`/product/${p.id}`)} />
           ))}
         </div>
       </section>

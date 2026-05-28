@@ -43,3 +43,20 @@ export const removeCartItem = async (req, res) => {
     });
   }
 };
+
+export const updateCartItem = async (req, res) => {
+  try {
+    const { quantity } = req.body;
+
+    const item = await cartService.updateCartItemQuantity(
+      req.params.itemId,
+      Number(quantity)
+    );
+
+    res.json(item);
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+};
