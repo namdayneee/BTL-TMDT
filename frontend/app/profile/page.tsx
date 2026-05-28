@@ -1,11 +1,59 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '../components/Header';
 import { Rocket, ShieldCheck, Trophy, Ruler } from 'lucide-react';
+import { clearToken, fetchCurrentUser, getStoredToken } from '../lib/auth-client';
 
 export default function Profile() {
   const router = useRouter();
+  const [authState, setAuthState] = useState<'checking' | 'authenticated' | 'unauthenticated'>('checking');
+
+  useEffect(() => {
+    const validateAccess = async () => {
+      const token = getStoredToken();
+
+      if (!token) {
+        setAuthState('unauthenticated');
+        return;
+      }
+
+      try {
+        await fetchCurrentUser(token);
+        setAuthState('authenticated');
+      } catch {
+        clearToken();
+        setAuthState('unauthenticated');
+      }
+    };
+
+    void validateAccess();
+  }, [router]);
+
+  if (authState === 'checking') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="font-tech text-sm text-on-surface-variant">Đang kiểm tra đăng nhập...</p>
+      </div>
+    );
+  }
+
+  if (authState === 'unauthenticated') {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="pt-24 pb-20 px-5 md:px-8 lg:px-12 max-w-6xl mx-auto flex items-center justify-center">
+          <button
+            onClick={() => router.push('/login?redirect=/profile')}
+            className="chrome-effect px-6 py-3 rounded-xl font-tech text-[10px] font-bold text-on-surface uppercase tracking-widest active:scale-95 transition-all"
+          >
+            Bạn chưa có tài khoản
+          </button>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-surface">

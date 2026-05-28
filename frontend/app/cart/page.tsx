@@ -36,7 +36,7 @@ export default function Cart() {
 
   return (
     <div className="min-h-screen bg-background pb-40 lg:pb-16">
-      <Header title="GIỎ HÀNG" showBack />
+      <Header title="GIỎ HÀNG" />
 
       <main className="pt-24 px-5 md:px-8 lg:px-12 max-w-3xl mx-auto">
 

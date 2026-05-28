@@ -1,7 +1,9 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Menu, ShoppingBag, ArrowLeft, User } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
+import { clearToken, fetchCurrentUser, getStoredToken } from '../lib/auth-client';
 
 interface HeaderProps {
   title?: string;
@@ -18,6 +20,50 @@ const navLinks = [
 export default function Header({ title, showBack }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const [showAuthSelect, setShowAuthSelect] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const validateAuth = async () => {
+      const token = getStoredToken();
+      if (!token) {
+        setIsAuthenticated(false);
+        return;
+      }
+
+      try {
+        await fetchCurrentUser(token);
+        setIsAuthenticated(true);
+      } catch {
+        clearToken();
+        setIsAuthenticated(false);
+      }
+    };
+
+    void validateAuth();
+  }, [pathname]);
+
+  const handleAuthAction = (action: 'login' | 'orders' | 'profile' | 'logout') => {
+    if (action === 'login') {
+      router.push('/login');
+    }
+
+    if (action === 'orders') {
+      router.push('/orders');
+    }
+
+    if (action === 'profile') {
+      router.push('/profile');
+    }
+
+    if (action === 'logout') {
+      clearToken();
+      setIsAuthenticated(false);
+      router.push('/');
+    }
+
+    setShowAuthSelect(false);
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/30 shadow-sm h-16">
@@ -33,7 +79,10 @@ export default function Header({ title, showBack }: HeaderProps) {
               <ArrowLeft size={24} />
             </button>
           ) : (
-            <button className="text-on-surface active:scale-95 transition-transform duration-200">
+            <button
+              onClick={() => setShowAuthSelect((prev) => !prev)}
+              className="text-on-surface active:scale-95 transition-transform duration-200"
+            >
               <Menu size={24} />
             </button>
           )}
@@ -101,13 +150,35 @@ export default function Header({ title, showBack }: HeaderProps) {
         )}
 
         {/* ── RIGHT: profile + cart ── */}
-        <div className="ml-auto flex items-center gap-3 md:gap-4">
+        <div className="ml-auto flex items-center gap-3 md:gap-4 relative">
           <button
-            onClick={() => router.push('/profile')}
-            className="hidden md:block text-on-surface hover:opacity-80 active:scale-95 transition-all duration-200"
+            onClick={() => setShowAuthSelect((prev) => !prev)}
+            className="text-on-surface hover:opacity-80 active:scale-95 transition-all duration-200"
           >
             <User size={22} />
           </button>
+          {showAuthSelect && (
+            <div
+              className="absolute top-10 right-10 z-50 bg-white border border-gray-300 rounded-lg p-2 shadow-md"
+              onMouseLeave={() => setShowAuthSelect(false)}
+            >
+              {!isAuthenticated ? (
+                <button
+                  onClick={() => handleAuthAction('login')}
+                  className="px-4 py-2 text-sm font-medium text-black hover:bg-gray-100 rounded-md whitespace-nowrap"
+                >
+                  Đăng nhập
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleAuthAction('logout')}
+                  className="px-4 py-2 text-sm font-medium text-black hover:bg-gray-100 rounded-md whitespace-nowrap"
+                >
+                  Đăng xuất
+                </button>
+              )}
+            </div>
+          )}
           <button
             onClick={() => router.push('/cart')}
             className="text-on-surface relative active:scale-95 transition-transform duration-200"

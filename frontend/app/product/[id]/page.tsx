@@ -29,7 +29,7 @@ export default function ProductDetail() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header showBack />
+      <Header />
 
       <div className="pt-16 lg:flex lg:min-h-[calc(100vh-4rem)]">
 
