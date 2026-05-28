@@ -88,3 +88,25 @@ export const removeCartItem = async (
     },
   });
 };
+
+export const updateCartItemQuantity = async (
+  itemId,
+  quantity
+) => {
+  if (quantity <= 0) {
+    return prisma.cartItem.delete({
+      where: {
+        id: Number(itemId),
+      },
+    });
+  }
+
+  return prisma.cartItem.update({
+    where: {
+      id: Number(itemId),
+    },
+    data: {
+      quantity,
+    },
+  });
+};

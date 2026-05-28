@@ -2,9 +2,13 @@ import prisma from "../utils/prisma.js";
 
 import productClient from "../utils/productClient.js";
 
-export const checkout = async (
-  userId
-) => {
+const toStockItems = (cartItems) =>
+  cartItems.map((item) => ({
+    variantId: item.variantId,
+    quantity: item.quantity,
+  }));
+
+export const checkout = async (userId) => {
   const cart = await prisma.cart.findUnique({
     where: {
       userId,
@@ -15,70 +19,77 @@ export const checkout = async (
     },
   });
 
-  if (
-    !cart ||
-    cart.items.length === 0
-  ) {
+  if (!cart || cart.items.length === 0) {
     throw new Error("Cart is empty");
   }
 
   let totalAmount = 0;
-
   const orderItemsData = [];
+  const stockItems = toStockItems(cart.items);
 
   for (const item of cart.items) {
-    const response =
-      await productClient.get(
-        `/products/variants/${item.variantId}`
-      );
+    const response = await productClient.get(
+      `/products/variants/${item.variantId}`
+    );
 
     const variant = response.data;
 
-    const price =
-      variant.product.price;
+    if (variant.stock < item.quantity) {
+      throw new Error(
+        `Không đủ tồn kho: ${variant.product.name} (size ${variant.size}) chỉ còn ${variant.stock}`
+      );
+    }
 
-    totalAmount +=
-      price * item.quantity;
+    const price = variant.product.price;
+
+    totalAmount += price * item.quantity;
 
     orderItemsData.push({
       variantId: item.variantId,
-
       quantity: item.quantity,
-
       price,
     });
   }
 
-  const order = await prisma.order.create({
-    data: {
-      userId,
+  await productClient.post("/products/variants/stock/decrement", {
+    items: stockItems,
+  });
 
-      totalAmount,
-
-      status: "pending",
-
-      items: {
-        create: orderItemsData,
+  try {
+    const order = await prisma.order.create({
+      data: {
+        userId,
+        totalAmount,
+        status: "pending",
+        items: {
+          create: orderItemsData,
+        },
       },
-    },
 
-    include: {
-      items: true,
-    },
-  });
+      include: {
+        items: true,
+      },
+    });
 
-  await prisma.cartItem.deleteMany({
-    where: {
-      cartId: cart.id,
-    },
-  });
+    await prisma.cartItem.deleteMany({
+      where: {
+        cartId: cart.id,
+      },
+    });
 
-  return order;
+    return order;
+  } catch (error) {
+    await productClient
+      .post("/products/variants/stock/restore", {
+        items: stockItems,
+      })
+      .catch(() => {});
+
+    throw error;
+  }
 };
 
-export const getMyOrders = async (
-  userId
-) => {
+export const getMyOrders = async (userId) => {
   return prisma.order.findMany({
     where: {
       userId,
@@ -94,15 +105,14 @@ export const getMyOrders = async (
   });
 };
 
-export const updateOrderStatus =
-  async (orderId, status) => {
-    return prisma.order.update({
-      where: {
-        id: Number(orderId),
-      },
+export const updateOrderStatus = async (orderId, status) => {
+  return prisma.order.update({
+    where: {
+      id: Number(orderId),
+    },
 
-      data: {
-        status,
-      },
-    });
-  };
+    data: {
+      status,
+    },
+  });
+};

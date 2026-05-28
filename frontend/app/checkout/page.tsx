@@ -1,31 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '../components/Header';
 import {
   MapPin, Stars, CreditCard, ArrowRight, ChevronDown,
   ShieldCheck, Truck, Tag,
 } from 'lucide-react';
-
-const orderItems = [
-  {
-    id: 1,
-    name: 'Vault Core Hoodie',
-    price: 1050000,
-    specs: 'L · PHANTOM',
-    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCEWc7_cSuhsmCHxCpdpwsyPOrnTcO12k4WWyuKAZGYJ-M7gNDnjtXIPWpLf5jxrxoN17iVhwdYxC2XVo1WwQICa7uWwCzGUFmZrefHPKMynPtsqdZtnzbwj7mM1n8r3GNsgfxp98fh3t-GOOXZQwjWwyoS5iCxSo_LOTsLevrhWV4_Im3mcqFk3YvEUEEDl2MdIAs3Qr4yQeBqGhJB_NEe7ZJ6cb6Y0jr4TKUXFUP9eh8SqeMS2z1MSvJvoO98RlOEyEOSl3slHxNA',
-    qty: 1,
-  },
-  {
-    id: 2,
-    name: 'Chrome Signature Tee',
-    price: 650000,
-    specs: 'M · TRẮNG XƯƠNG',
-    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBhPQmyf7IshNddW1HDbPtW8dEuFZLOpAwLI1x7n6ZP1eMAcUadR_u0TWJ4U1WpNlTCBh1-QeDadPywVrltPq2K-a6hAp9F4_jCsH1haaHFWJjbwXC-h_dk8nDdW8YzJ-kHIqDSeNy1XXiLOwv5TD6j55_OJrXMvphUfCnflQ3bMEEflbErOpUMq0dBl0NlK4TH7Tz-zGhlTLTanyuUhK_dTS8WGcuoGKweW2HM1qKuzxxlmjZwXB9QHFnpu81B2vV_5GtG0gegpQLU',
-    qty: 2,
-  },
-];
+import { useCart } from '../context/CartContext';
+import { checkoutOrder } from '../lib/order-api';
+import { getStoredToken } from '../lib/auth-client';
+import { formatVND } from '../lib/utils';
 
 const paymentMethods = [
   { id: 'momo', label: 'Ví MoMo', sub: 'Mo', color: 'bg-pink-500' },
@@ -35,19 +20,47 @@ const paymentMethods = [
   { id: 'cod', label: 'Tiền mặt (COD)', sub: '₫', color: 'bg-emerald-600' },
 ];
 
-function formatVND(n: number) {
-  return n.toLocaleString('vi-VN') + ' ₫';
-}
-
 export default function Checkout() {
   const router = useRouter();
+  const { items, subtotal, refreshCart } = useCart();
   const [selectedPayment, setSelectedPayment] = useState('momo');
   const [promoCode, setPromoCode] = useState('');
+  const [placing, setPlacing] = useState(false);
+  const [cartChecked, setCartChecked] = useState(false);
 
-  const subtotal = orderItems.reduce((s, i) => s + i.price * i.qty, 0);
-  const memberDiscount = 50000;
+  useEffect(() => {
+    const token = getStoredToken();
+    if (!token) {
+      router.push('/login?redirect=/checkout');
+      return;
+    }
+    void refreshCart().finally(() => setCartChecked(true));
+  }, [router, refreshCart]);
+
+  useEffect(() => {
+    if (!cartChecked || placing) return;
+    if (items.length === 0 && getStoredToken()) {
+      router.push('/cart');
+    }
+  }, [items.length, cartChecked, placing, router]);
+
   const shipping = 0;
-  const total = subtotal - memberDiscount + shipping;
+  const total = subtotal + shipping;
+
+  const handlePlaceOrder = async () => {
+    setPlacing(true);
+    try {
+      const order = await checkoutOrder();
+      sessionStorage.setItem('lastOrder', JSON.stringify(order));
+      router.replace(`/order-success?orderId=${order.id}`);
+      void refreshCart();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Đặt hàng thất bại');
+      setPlacing(false);
+    }
+  };
+
+  if (!getStoredToken()) return null;
 
   return (
     <div className="min-h-screen bg-background pb-32 lg:pb-16">
@@ -200,23 +213,23 @@ export default function Checkout() {
               {/* Items mini list */}
               <div className="bg-white rounded-2xl border border-outline-variant/20 shadow-sm overflow-hidden">
                 <button className="w-full px-6 py-4 flex items-center justify-between border-b border-outline-variant/10">
-                  <h3 className="font-tech text-xs font-bold uppercase tracking-widest">{orderItems.length} sản phẩm</h3>
+                  <h3 className="font-tech text-xs font-bold uppercase tracking-widest">{items.length} sản phẩm</h3>
                   <ChevronDown size={16} className="text-on-surface-variant" />
                 </button>
                 <div className="divide-y divide-outline-variant/10">
-                  {orderItems.map(item => (
+                  {items.map(item => (
                     <div key={item.id} className="px-6 py-4 flex items-center gap-3">
                       <div className="w-12 h-14 bg-surface-container rounded-xl overflow-hidden shrink-0 relative">
                         <img className="w-full h-full object-cover" src={item.img} alt={item.name} />
                         <span className="absolute -top-1 -right-1 w-4 h-4 bg-secondary text-white rounded-full text-[9px] font-bold flex items-center justify-center">
-                          {item.qty}
+                          {item.quantity}
                         </span>
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-tech text-[11px] font-bold uppercase text-on-surface truncate">{item.name}</p>
-                        <p className="font-tech text-[9px] text-on-surface-variant/60 uppercase mt-0.5">{item.specs}</p>
+                        <p className="font-tech text-[9px] text-on-surface-variant/60 uppercase mt-0.5">{item.size}</p>
                       </div>
-                      <p className="font-tech text-xs font-bold text-on-surface shrink-0">{formatVND(item.price * item.qty)}</p>
+                      <p className="font-tech text-xs font-bold text-on-surface shrink-0">{formatVND(item.price * item.quantity)}</p>
                     </div>
                   ))}
                 </div>
@@ -232,10 +245,6 @@ export default function Checkout() {
                   <span className="text-on-surface-variant uppercase tracking-widest">Vận chuyển</span>
                   <span className="font-bold text-secondary text-[10px]">MIỄN PHÍ</span>
                 </div>
-                <div className="flex justify-between font-tech text-xs text-secondary">
-                  <span className="uppercase tracking-widest">Giảm giá</span>
-                  <span className="font-bold">- {formatVND(memberDiscount)}</span>
-                </div>
                 <div className="pt-4 border-t border-outline-variant/20 flex justify-between items-baseline">
                   <span className="font-display text-2xl uppercase text-on-surface">Tổng cộng</span>
                   <span className="font-display text-2xl text-secondary">{formatVND(total)}</span>
@@ -244,10 +253,11 @@ export default function Checkout() {
 
               {/* CTA */}
               <button
-                onClick={() => router.push('/order-success')}
-                className="w-full h-14 bg-secondary text-white rounded-full flex items-center justify-center gap-3 shadow-xl shadow-secondary/20 active:scale-[0.98] transition-all holographic-sweep group font-tech text-xs font-bold uppercase tracking-[0.15em]"
+                onClick={() => void handlePlaceOrder()}
+                disabled={placing || items.length === 0}
+                className="w-full h-14 bg-secondary text-white rounded-full flex items-center justify-center gap-3 shadow-xl shadow-secondary/20 active:scale-[0.98] transition-all holographic-sweep group font-tech text-xs font-bold uppercase tracking-[0.15em] disabled:opacity-50"
               >
-                ĐẶT HÀNG · {formatVND(total)}
+                {placing ? 'ĐANG XỬ LÝ...' : `ĐẶT HÀNG · ${formatVND(total)}`}
                 <ArrowRight size={17} className="group-hover:translate-x-2 transition-transform" />
               </button>
 
@@ -267,10 +277,11 @@ export default function Checkout() {
           <span className="font-bold text-secondary text-base">{formatVND(total)}</span>
         </div>
         <button
-          onClick={() => router.push('/order-success')}
-          className="w-full h-14 bg-secondary text-white rounded-full flex items-center justify-center gap-3 shadow-xl shadow-secondary/20 active:scale-[0.98] transition-all group font-tech text-xs font-bold uppercase tracking-[0.15em]"
+          onClick={() => void handlePlaceOrder()}
+          disabled={placing || items.length === 0}
+          className="w-full h-14 bg-secondary text-white rounded-full flex items-center justify-center gap-3 shadow-xl shadow-secondary/20 active:scale-[0.98] transition-all group font-tech text-xs font-bold uppercase tracking-[0.15em] disabled:opacity-50"
         >
-          ĐẶT HÀNG NGAY
+          {placing ? 'ĐANG XỬ LÝ...' : 'ĐẶT HÀNG NGAY'}
           <ArrowRight size={17} className="group-hover:translate-x-2 transition-transform" />
         </button>
       </div>

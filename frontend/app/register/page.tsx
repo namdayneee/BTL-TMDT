@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useRouter } from 'next/navigation';
-import { Lock, Mail, ShieldCheck } from 'lucide-react';
+import { Lock, Mail } from 'lucide-react';
 import { registerWithPassword } from '../lib/auth-client';
 
 export default function Register() {
@@ -90,7 +90,9 @@ export default function Register() {
             className="flex items-center gap-3 cursor-pointer"
             onClick={() => router.push('/')}
           >
-            <img src="/images/logo.png" alt="VAULT" className="w-10 h-10 object-contain brightness-0 invert" />
+            <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center p-1.5 shrink-0">
+              <img src="/images/logo.png" alt="" className="w-full h-full object-contain" />
+            </div>
             <span className="font-display text-5xl tracking-[0.3em] text-surface uppercase">VAULT</span>
           </div>
           <div>
@@ -100,10 +102,6 @@ export default function Register() {
             <p className="font-body text-sm text-surface/60 max-w-xs leading-relaxed">
               Tạo tài khoản để lưu đơn hàng, theo dõi trạng thái vận chuyển và nhận ưu đãi dành riêng cho thành viên Vault.
             </p>
-            <div className="mt-10 flex items-center gap-3 opacity-40">
-              <ShieldCheck size={16} className="text-surface" />
-              <span className="font-tech text-[10px] text-surface tracking-widest">MÃ HÓA 256-BIT</span>
-            </div>
           </div>
         </div>
       </div>
@@ -125,8 +123,11 @@ export default function Register() {
           className="relative z-10 w-full max-w-100 lg:max-w-110"
         >
           <header className="mb-10 text-center lg:text-left">
-            <div className="mb-4 inline-block px-4 py-1 glass-card rounded-full border-outline-variant/20">
-              <span className="font-tech text-[10px] text-secondary uppercase tracking-widest">Kích hoạt tài khoản mới</span>
+            <div className="lg:hidden flex items-center justify-center gap-2 mb-6">
+              <div className="w-9 h-9 rounded-lg bg-white border border-outline-variant/20 flex items-center justify-center p-1.5">
+                <img src="/images/logo.png" alt="" className="w-full h-full object-contain" />
+              </div>
+              <span className="font-display text-2xl tracking-[0.2em] text-on-surface uppercase">VAULT</span>
             </div>
             <h2 className="font-display text-5xl leading-none text-on-surface uppercase mb-2">ĐĂNG KÝ</h2>
           </header>

@@ -6,39 +6,71 @@ import { useRouter } from 'next/navigation';
 import Header from '../components/Header';
 import { Search } from 'lucide-react';
 import { clearToken, fetchCurrentUser, getStoredToken } from '../lib/auth-client';
+import { fetchMyOrders } from '../lib/order-api';
+import { fetchVariantById } from '../lib/product-api';
+import { formatOrderDate, getOrderStatusDisplay } from '../lib/order-utils';
+import { formatVND } from '../lib/utils';
+import type { ApiOrder } from '../lib/types';
 
-const orders = [
-  {
-    id: 'VT-99281',
-    date: '24 Tháng 05, 2026',
-    status: 'ĐANG GIAO',
-    statusBg: 'bg-secondary',
-    statusText: 'text-white',
-    name: 'NEO-TOKYO TECH SHELL V1',
-    specs: 'Size: L | Màu: Onyx Black',
-    price: '4.250.000 VND',
-    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD3uGXxz3GNFCYyWD2oLN8N9jzoPs8H4hMUqXJyLnn1FZIwJbq9qXLYTxyLRxARJioX79v8fs0e8ibkKUCYadIpCjzZz8bhIl5lzL73nWNZyuJJjmqIZGxEPPu6czVxxXUKxtxavZFoAdmZEUsp-ZIpGKruknxrhS8mStWzHmcsDpnSO-dFxHjhC06XiJRBKBWo4rFeBTIYKjgqyIv7Mj5NoCwVuvmxzXxDtB8piiFyWFpgDloeAiUVqmuLO3Up2f_swC3hZQ4hYxX3',
-    eta: 'Dự kiến giao: 27/05'
-  },
-  {
-    id: 'VT-98422',
-    date: '12 Tháng 05, 2026',
-    status: 'ĐÃ GIAO',
-    statusBg: 'bg-surface-container-highest',
-    statusText: 'text-on-surface',
-    name: 'KINETIC PULSE SNEAKER',
-    specs: 'Size: 42 | Màu: Chrome/Silver',
-    price: '6.800.000 VND',
-    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDyIpardGwr2BbPPdKMEFilypD91hcjh-aOsZwPZGWpnWwRtKn6QzZYy_4zq3lZU-oLBxsMBZ05wD3dOzSSyJ78uury6ELFtdeK1iflVHcbjYDyc0i8Bmlapnuj0JKT5zLXAKxA3_FSMfB-LWoAymwXHT4lnA4ePh4Q96mwNuv7QHW0WO93PMmu8PXNK7iJioIpP1gnvod7on54R0Vosk7lvMN552ucZB86KFQcRlrWZbReEXTk72f81WmKrT-gUTq_zCjuGaXi92db',
-    action: 'Đánh giá ngay'
-  }
-];
+type DisplayOrder = {
+  id: string;
+  date: string;
+  status: string;
+  statusBg: string;
+  statusText: string;
+  name: string;
+  specs: string;
+  price: string;
+  img: string;
+  eta?: string;
+  action?: string;
+};
 
 const filters = ['TẤT CẢ', 'CHỜ XỬ LÝ', 'ĐANG GIAO', 'HOÀN THÀNH'];
+
+async function mapOrdersToDisplay(orders: ApiOrder[]): Promise<DisplayOrder[]> {
+  return Promise.all(
+    orders.map(async (order) => {
+      const firstItem = order.items[0];
+      let name = 'Sản phẩm Vault';
+      let specs = '';
+      let img = '/images/products/pro1.png';
+
+      if (firstItem) {
+        try {
+          const variant = await fetchVariantById(firstItem.variantId);
+          name = variant.product.name;
+          specs = `Size: ${variant.size}`;
+          img = variant.product.thumbnail || img;
+        } catch {
+          specs = `Variant #${firstItem.variantId}`;
+        }
+      }
+
+      const statusDisplay = getOrderStatusDisplay(order.status);
+
+      return {
+        id: `VT-${order.id}`,
+        date: formatOrderDate(order.createdAt),
+        status: statusDisplay.label,
+        statusBg: statusDisplay.statusBg,
+        statusText: statusDisplay.statusText,
+        name,
+        specs,
+        price: formatVND(order.totalAmount),
+        img,
+        eta: order.status === 'shipping' ? 'Đang vận chuyển' : undefined,
+        action: order.status === 'delivered' ? 'Đánh giá ngay' : undefined,
+      };
+    })
+  );
+}
 
 export default function OrderList() {
   const router = useRouter();
   const [authState, setAuthState] = useState<'checking' | 'authenticated' | 'unauthenticated'>('checking');
+  const [orders, setOrders] = useState<DisplayOrder[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
 
   useEffect(() => {
     const validateAccess = async () => {
@@ -52,9 +84,14 @@ export default function OrderList() {
       try {
         await fetchCurrentUser(token);
         setAuthState('authenticated');
+        setLoadingOrders(true);
+        const data = await fetchMyOrders();
+        setOrders(await mapOrdersToDisplay(data));
       } catch {
         clearToken();
         setAuthState('unauthenticated');
+      } finally {
+        setLoadingOrders(false);
       }
     };
 
@@ -120,6 +157,14 @@ export default function OrderList() {
           </div>
         </div>
 
+        {loadingOrders && (
+          <p className="font-tech text-sm text-on-surface-variant mb-8">Đang tải đơn hàng...</p>
+        )}
+
+        {!loadingOrders && orders.length === 0 && (
+          <p className="font-tech text-sm text-on-surface-variant mb-8">Bạn chưa có đơn hàng nào.</p>
+        )}
+
         {/* Order list — 1 col mobile, 2 col desktop */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {orders.map((o) => (
@@ -127,7 +172,7 @@ export default function OrderList() {
               key={o.id}
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              onClick={() => router.push(`/order/${o.id}`)}
+              onClick={() => router.push(`/order/${o.id.replace('VT-', '')}`)}
               className="glass-card rounded-3xl p-5 flex flex-col gap-5 relative overflow-hidden group cursor-pointer border border-outline-variant/20 hover:shadow-xl transition-shadow"
             >
               <div className="flex justify-between items-start">

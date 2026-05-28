@@ -75,6 +75,52 @@ export const deleteProduct = async (req, res) => {
   }
 };
 
+export const decrementStockBatch = async (req, res) => {
+  try {
+    const { items } = req.body;
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({
+        message: "items array is required",
+      });
+    }
+
+    const updated = await productService.decrementStockBatch(items);
+
+    res.json({
+      message: "Stock updated",
+      variants: updated,
+    });
+  } catch (error) {
+    res.status(400).json({
+      message: error.message,
+    });
+  }
+};
+
+export const restoreStockBatch = async (req, res) => {
+  try {
+    const { items } = req.body;
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({
+        message: "items array is required",
+      });
+    }
+
+    const updated = await productService.restoreStockBatch(items);
+
+    res.json({
+      message: "Stock restored",
+      variants: updated,
+    });
+  } catch (error) {
+    res.status(400).json({
+      message: error.message,
+    });
+  }
+};
+
 export const getVariantById = async (
   req,
   res
