@@ -6,7 +6,7 @@ import { Truck, Check, MapPin, Package, Copy, MessageCircle, AlertCircle } from 
 export default function OrderDetail() {
   return (
     <div className="min-h-screen bg-background">
-      <Header title="Chi tiết đơn hàng" showBack />
+      <Header title="Chi tiết đơn hàng" />
 
       <main className="pt-24 pb-16 px-5 md:px-8 lg:px-12 max-w-6xl mx-auto">
 

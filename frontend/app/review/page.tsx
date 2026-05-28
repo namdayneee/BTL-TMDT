@@ -12,7 +12,7 @@ const sliders = [
 export default function Review() {
   return (
     <div className="min-h-screen bg-background">
-      <Header title="ĐÁNH GIÁ SẢN PHẨM" showBack />
+      <Header title="ĐÁNH GIÁ SẢN PHẨM" />
 
       <main className="pt-24 pb-20 px-5 md:px-8 lg:px-12 max-w-4xl mx-auto">
 
