@@ -2,13 +2,13 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #fdf9f0;
-  --color-surface: #fdf9f0;
-  --color-surface-dim: #dedad1;
-  --color-surface-container-low: #f7f3ea;
-  --color-surface-container: #f2ede4;
-  --color-surface-container-high: #ece8df;
-  --color-surface-container-highest: #e6e2d9;
+  --color-background: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-dim: #ebebeb;
+  --color-surface-container-low: #fafafa;
+  --color-surface-container: #f5f5f5;
+  --color-surface-container-high: #efefef;
+  --color-surface-container-highest: #e8e8e8;
   
   --color-on-surface: #1c1c16;
   --color-on-surface-variant: #444844;
@@ -28,8 +28,9 @@
 }
 
 @layer base {
-  body {
-    @apply bg-background text-on-surface font-body antialiased;
+  html, body {
+    background-color: #ffffff;
+    @apply text-on-surface font-body antialiased;
   }
 }
 
