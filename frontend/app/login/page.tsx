@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Lock, Smartphone } from 'lucide-react';
-import { loginWithPassword, saveToken } from '../lib/auth-client';
+import { isAdminRole, loginWithPassword, saveToken } from '../lib/auth-client';
 
 export default function Login() {
   const [loading, setLoading] = useState(true);
@@ -28,7 +28,10 @@ export default function Login() {
     try {
       const result = await loginWithPassword(email, password);
       saveToken(result.token);
-      const redirectTo = searchParams.get('redirect') || '/';
+      const redirectParam = searchParams.get('redirect');
+      const redirectTo =
+        redirectParam ||
+        (isAdminRole(result.user.role) ? '/admin' : '/');
       router.push(redirectTo);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Đăng nhập thất bại');

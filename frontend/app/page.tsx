@@ -50,6 +50,13 @@ const lookbookImages = [
   },
 ];
 
+function scrollToSection(id: string) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
 export default function Home() {
   const router = useRouter();
   const [products, setProducts] = useState<DisplayProduct[]>([]);
@@ -132,7 +139,7 @@ export default function Home() {
           <motion.button
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => router.push(products[0] ? `/product/${products[0].id}` : '/product')}
+            onClick={() => scrollToSection('bo-suu-tap-moi')}
             className="bg-secondary text-white px-8 py-4 rounded-lg font-tech text-xs uppercase tracking-widest shadow-xl flex-1 md:flex-none md:min-w-45 hover:opacity-90 transition-all"
           >
             Sắm Ngay
@@ -140,7 +147,7 @@ export default function Home() {
           <motion.button
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => router.push('/profile')}
+            onClick={() => scrollToSection('van-hoa-vault')}
             className="bg-white/15 backdrop-blur-md text-white border border-white/30 px-8 py-4 rounded-lg font-tech text-xs uppercase tracking-widest flex-1 md:flex-none md:min-w-45 transition-all hover:bg-white/25"
           >
             Văn Hóa
@@ -149,7 +156,7 @@ export default function Home() {
       </section>
 
       {/* New Collection */}
-      <section className="py-16 overflow-hidden">
+      <section id="bo-suu-tap-moi" className="py-16 overflow-hidden scroll-mt-20">
         <div className="px-5 md:px-10 lg:px-16 max-w-7xl mx-auto flex justify-between items-end mb-8">
           <div>
             <h3 className="font-display text-4xl md:text-5xl text-on-surface mb-2 uppercase">BỘ SƯU TẬP MỚI</h3>
@@ -430,7 +437,7 @@ export default function Home() {
       </section>
 
       {/* Văn Hóa Vault - Community UGC Section */}
-      <section className="py-20 bg-surface-container-highest/30">
+      <section id="van-hoa-vault" className="py-20 bg-surface-container-highest/30 scroll-mt-20">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}

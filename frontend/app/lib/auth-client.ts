@@ -113,6 +113,10 @@ export function roleBadgeLabel(role: string): string {
   return "THÀNH VIÊN HẠNG BLACK";
 }
 
+export function isAdminRole(role: string): boolean {
+  return role === "admin";
+}
+
 export function getStoredToken() {
   if (typeof window === "undefined") return null;
   return window.localStorage.getItem(AUTH_TOKEN_KEY);

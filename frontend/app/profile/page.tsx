@@ -9,11 +9,16 @@ import {
   displayNameFromEmail,
   fetchMe,
   getStoredToken,
+  isAdminRole,
   roleBadgeLabel,
   type AuthUser,
 } from '../lib/auth-client';
 import { fetchMyOrders } from '../lib/order-api';
 import { fetchVariantById } from '../lib/product-api';
+import {
+  joinUserOrdersRoom,
+  subscribeOrderStatusUpdates,
+} from '../lib/order-socket';
 import { getOrderStatusDisplay } from '../lib/order-utils';
 import type { ApiOrder } from '../lib/types';
 
@@ -91,6 +96,26 @@ export default function Profile() {
     void validateAccess();
   }, [router]);
 
+  useEffect(() => {
+    if (!user) return;
+
+    joinUserOrdersRoom(user.id);
+
+    const syncLatestOrder = async () => {
+      try {
+        const orders = await fetchMyOrders();
+        const preview = await buildOrderPreview(orders[0]);
+        setLatestOrder(preview);
+      } catch {
+        setLatestOrder(null);
+      }
+    };
+
+    return subscribeOrderStatusUpdates(() => {
+      void syncLatestOrder();
+    });
+  }, [user]);
+
   if (authState === 'checking') {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -143,6 +168,15 @@ export default function Profile() {
           <div className="mt-2 text-secondary bg-secondary/10 px-4 py-1.5 rounded-full border border-secondary/20 font-tech text-[10px] font-bold uppercase tracking-widest">
             {user ? roleBadgeLabel(user.role) : 'THÀNH VIÊN HẠNG BLACK'}
           </div>
+          {user && isAdminRole(user.role) && (
+            <button
+              type="button"
+              onClick={() => router.push('/admin')}
+              className="mt-4 px-6 py-2.5 rounded-full bg-zinc-900 text-amber-400 font-tech text-[10px] uppercase tracking-widest hover:opacity-90 transition-opacity"
+            >
+              Mở bảng quản trị →
+            </button>
+          )}
         </section>
 
         {/* Two-column layout on desktop */}

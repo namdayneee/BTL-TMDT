@@ -1,19 +1,28 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { useRouter } from 'next/navigation';
 import Header from '../components/Header';
 import { Search } from 'lucide-react';
-import { clearToken, fetchCurrentUser, getStoredToken } from '../lib/auth-client';
+import { clearToken, fetchCurrentUser, getStoredToken, type AuthUser } from '../lib/auth-client';
 import { fetchMyOrders } from '../lib/order-api';
 import { fetchVariantById } from '../lib/product-api';
-import { formatOrderDate, getOrderStatusDisplay } from '../lib/order-utils';
+import {
+  joinUserOrdersRoom,
+  subscribeOrderStatusUpdates,
+} from '../lib/order-socket';
+import {
+  formatOrderDate,
+  getOrderStatusDisplay,
+  normalizeOrderStatus,
+} from '../lib/order-utils';
 import { formatVND } from '../lib/utils';
 import type { ApiOrder } from '../lib/types';
 
 type DisplayOrder = {
   id: string;
+  orderId: number;
   date: string;
   status: string;
   statusBg: string;
@@ -47,10 +56,12 @@ async function mapOrdersToDisplay(orders: ApiOrder[]): Promise<DisplayOrder[]> {
         }
       }
 
-      const statusDisplay = getOrderStatusDisplay(order.status);
+      const status = normalizeOrderStatus(order.status);
+      const statusDisplay = getOrderStatusDisplay(status);
 
       return {
         id: `VT-${order.id}`,
+        orderId: order.id,
         date: formatOrderDate(order.createdAt),
         status: statusDisplay.label,
         statusBg: statusDisplay.statusBg,
@@ -59,8 +70,8 @@ async function mapOrdersToDisplay(orders: ApiOrder[]): Promise<DisplayOrder[]> {
         specs,
         price: formatVND(order.totalAmount),
         img,
-        eta: order.status === 'shipping' ? 'Đang vận chuyển' : undefined,
-        action: order.status === 'delivered' ? 'Đánh giá ngay' : undefined,
+        eta: status === 'shipping' ? 'Đang vận chuyển' : undefined,
+        action: status === 'delivered' ? 'Đánh giá ngay' : undefined,
       };
     })
   );
@@ -69,8 +80,14 @@ async function mapOrdersToDisplay(orders: ApiOrder[]): Promise<DisplayOrder[]> {
 export default function OrderList() {
   const router = useRouter();
   const [authState, setAuthState] = useState<'checking' | 'authenticated' | 'unauthenticated'>('checking');
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [rawOrders, setRawOrders] = useState<ApiOrder[]>([]);
   const [orders, setOrders] = useState<DisplayOrder[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
+
+  const refreshDisplay = useCallback(async (list: ApiOrder[]) => {
+    setOrders(await mapOrdersToDisplay(list));
+  }, []);
 
   useEffect(() => {
     const validateAccess = async () => {
@@ -82,11 +99,17 @@ export default function OrderList() {
       }
 
       try {
-        await fetchCurrentUser(token);
+        const currentUser = await fetchCurrentUser(token);
+        setUser(currentUser);
         setAuthState('authenticated');
         setLoadingOrders(true);
         const data = await fetchMyOrders();
-        setOrders(await mapOrdersToDisplay(data));
+        const normalized = data.map((o) => ({
+          ...o,
+          status: normalizeOrderStatus(o.status),
+        }));
+        setRawOrders(normalized);
+        await refreshDisplay(normalized);
       } catch {
         clearToken();
         setAuthState('unauthenticated');
@@ -96,7 +119,23 @@ export default function OrderList() {
     };
 
     void validateAccess();
-  }, [router]);
+  }, [router, refreshDisplay]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    joinUserOrdersRoom(user.id);
+
+    return subscribeOrderStatusUpdates(({ orderId, status }) => {
+      setRawOrders((prev) => {
+        const next = prev.map((o) =>
+          o.id === orderId ? { ...o, status: normalizeOrderStatus(status) } : o
+        );
+        void refreshDisplay(next);
+        return next;
+      });
+    });
+  }, [user, refreshDisplay]);
 
   if (authState === 'checking') {
     return (
@@ -132,9 +171,7 @@ export default function OrderList() {
           <p className="font-body text-sm text-on-surface-variant font-medium">Theo dõi hành trình phong cách của bạn tại Vault.</p>
         </div>
 
-        {/* Search + Filters row */}
         <div className="flex flex-col md:flex-row md:items-center gap-4 mb-8">
-          {/* Search */}
           <div className="relative group flex-1 max-w-md">
             <input
               className="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-secondary transition-all duration-300 py-4 px-12 outline-none font-tech text-sm font-medium text-on-surface placeholder:text-on-surface-variant/40"
@@ -144,7 +181,6 @@ export default function OrderList() {
             <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-secondary transition-colors" />
           </div>
 
-          {/* Filters */}
           <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar shrink-0">
             {filters.map((f, i) => (
               <button
@@ -165,14 +201,13 @@ export default function OrderList() {
           <p className="font-tech text-sm text-on-surface-variant mb-8">Bạn chưa có đơn hàng nào.</p>
         )}
 
-        {/* Order list — 1 col mobile, 2 col desktop */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {orders.map((o) => (
             <motion.div
               key={o.id}
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              onClick={() => router.push(`/order/${o.id.replace('VT-', '')}`)}
+              onClick={() => router.push(`/order/${o.orderId}`)}
               className="glass-card rounded-3xl p-5 flex flex-col gap-5 relative overflow-hidden group cursor-pointer border border-outline-variant/20 hover:shadow-xl transition-shadow"
             >
               <div className="flex justify-between items-start">
@@ -180,7 +215,9 @@ export default function OrderList() {
                   <span className="font-tech text-xs font-bold text-secondary tracking-widest">{o.id}</span>
                   <p className="font-body text-[11px] text-on-surface-variant mt-1 opacity-70">{o.date}</p>
                 </div>
-                <span className={`px-3 py-1 ${o.statusBg} ${o.statusText} text-[9px] font-bold tracking-widest rounded-full uppercase`}>
+                <span
+                  className={`px-3 py-1 ${o.statusBg} ${o.statusText} text-[9px] font-bold tracking-widest rounded-full uppercase transition-colors duration-300`}
+                >
                   {o.status}
                 </span>
               </div>
