@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '../components/Header';
-import { Rocket, ShieldCheck, Trophy, Ruler } from 'lucide-react';
+import { Rocket, ShieldCheck, Trophy, Ruler, Save, Loader2 } from 'lucide-react';
 import {
   clearToken,
   displayNameFromEmail,
@@ -15,12 +15,13 @@ import {
 } from '../lib/auth-client';
 import { fetchMyOrders } from '../lib/order-api';
 import { fetchVariantById } from '../lib/product-api';
+import { fetchMyProfile, updateMyProfile } from '../lib/profile-api';
 import {
   joinUserOrdersRoom,
   subscribeOrderStatusUpdates,
 } from '../lib/order-socket';
 import { getOrderStatusDisplay } from '../lib/order-utils';
-import type { ApiOrder } from '../lib/types';
+import type { ApiOrder, UserProfile } from '../lib/types';
 
 type OrderPreview = {
   id: string;
@@ -60,11 +61,20 @@ async function buildOrderPreview(order: ApiOrder | undefined): Promise<OrderPrev
   };
 }
 
+const FIT_PREFERENCE_OPTIONS = [
+  { value: 'snug', label: 'Ôm sát' },
+  { value: 'regular', label: 'Vừa vặn' },
+  { value: 'loose', label: 'Rộng rãi (Oversize)' },
+];
+
 export default function Profile() {
   const router = useRouter();
   const [authState, setAuthState] = useState<'checking' | 'authenticated' | 'unauthenticated'>('checking');
   const [user, setUser] = useState<AuthUser | null>(null);
   const [latestOrder, setLatestOrder] = useState<OrderPreview | null>(null);
+  const [profile, setProfile] = useState<UserProfile>({});
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
 
   useEffect(() => {
     const validateAccess = async () => {
@@ -79,6 +89,9 @@ export default function Profile() {
         const currentUser = await fetchMe();
         setUser(currentUser);
         setAuthState('authenticated');
+
+        // Load profile
+        void fetchMyProfile().then((p) => setProfile(p)).catch(() => {});
 
         try {
           const orders = await fetchMyOrders();
@@ -233,24 +246,70 @@ export default function Profile() {
                   </div>
                   <div>
                     <p className="font-tech text-[10px] opacity-60 tracking-[0.2em] font-bold uppercase mb-1">DÁNG PHÙ HỢP NHẤT</p>
-                    <p className="font-tech text-md font-bold text-on-surface uppercase mb-2">Oversized</p>
+                    <p className="font-tech text-md font-bold text-on-surface uppercase mb-2">
+                      {FIT_PREFERENCE_OPTIONS.find(f => f.value === profile.fitPreference)?.label || 'Chưa cài đặt'}
+                    </p>
                     <p className="font-body text-[11px] leading-relaxed text-on-surface-variant opacity-70">
                       Dựa trên 50.000+ phản hồi khách hàng. Thuật toán của chúng tôi đề xuất size dựa trên số đo thực tế.
                     </p>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-6 border-t border-outline-variant/10 pt-6">
+                <div className="grid grid-cols-2 gap-4 border-t border-outline-variant/10 pt-6">
                   <div>
-                    <p className="font-tech text-[9px] opacity-50 uppercase tracking-widest font-bold mb-1">Chiều cao</p>
-                    <p className="font-tech text-sm font-bold uppercase">180 CM</p>
+                    <label className="font-tech text-[9px] opacity-50 uppercase tracking-widest font-bold mb-2 block">Chiều cao (cm)</label>
+                    <input
+                      type="number"
+                      value={profile.height ?? ''}
+                      onChange={(e) => setProfile(p => ({ ...p, height: e.target.value ? Number(e.target.value) : null }))}
+                      placeholder="170"
+                      className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-3 font-tech text-sm outline-none focus:border-secondary transition-all text-center"
+                    />
                   </div>
                   <div>
-                    <p className="font-tech text-[9px] opacity-50 uppercase tracking-widest font-bold mb-1">Cân nặng</p>
-                    <p className="font-tech text-sm font-bold uppercase">75 KG</p>
+                    <label className="font-tech text-[9px] opacity-50 uppercase tracking-widest font-bold mb-2 block">Cân nặng (kg)</label>
+                    <input
+                      type="number"
+                      value={profile.weight ?? ''}
+                      onChange={(e) => setProfile(p => ({ ...p, weight: e.target.value ? Number(e.target.value) : null }))}
+                      placeholder="65"
+                      className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-3 font-tech text-sm outline-none focus:border-secondary transition-all text-center"
+                    />
                   </div>
                 </div>
-                <button className="w-full py-3.5 border border-secondary text-secondary font-tech text-[10px] font-bold uppercase tracking-[0.2em] rounded-xl hover:bg-secondary hover:text-white transition-all active:scale-[0.98]">
-                  CẬP NHẬT SỐ ĐO & PHẢN HỒI
+                <div>
+                  <label className="font-tech text-[9px] opacity-50 uppercase tracking-widest font-bold mb-2 block">Phong cách mặc yêu thích</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {FIT_PREFERENCE_OPTIONS.map((f) => (
+                      <button
+                        key={f.value}
+                        onClick={() => setProfile(p => ({ ...p, fitPreference: f.value }))}
+                        className={`p-2.5 rounded-xl border-2 transition-all text-center ${profile.fitPreference === f.value ? 'border-secondary bg-secondary/5 text-secondary' : 'border-outline-variant/20 text-on-surface-variant hover:border-secondary/40'}`}
+                      >
+                        <span className="font-tech text-[9px] font-bold uppercase">{f.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {profileSaved && (
+                  <p className="font-tech text-[10px] text-secondary text-center uppercase tracking-widest">✓ Đã lưu thành công</p>
+                )}
+                <button
+                  onClick={async () => {
+                    setProfileSaving(true);
+                    setProfileSaved(false);
+                    try {
+                      const updated = await updateMyProfile(profile);
+                      setProfile(updated);
+                      setProfileSaved(true);
+                      setTimeout(() => setProfileSaved(false), 3000);
+                    } catch { /* ignore */ }
+                    finally { setProfileSaving(false); }
+                  }}
+                  disabled={profileSaving}
+                  className="w-full py-3.5 border border-secondary text-secondary font-tech text-[10px] font-bold uppercase tracking-[0.2em] rounded-xl hover:bg-secondary hover:text-white transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {profileSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                  LƯU SỐ ĐO
                 </button>
               </div>
             </section>

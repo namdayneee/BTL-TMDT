@@ -13,7 +13,39 @@ export type ApiReview = {
   productId: number;
   rating: number;
   content: string;
+  height: number | null;
+  weight: number | null;
+  fitFeeling: string | null;
+  purchasedSize: string | null;
   createdAt: string;
+};
+
+export type UserProfile = {
+  id?: number;
+  userId?: number;
+  fullName?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  height?: number | null;
+  weight?: number | null;
+  fitPreference?: string | null;
+};
+
+export type SizingRecommendation = {
+  method: 'collaborative' | 'rule_based' | 'none';
+  recommendedSize: string | null;
+  confidence: number | null;
+  distribution: Record<string, number> | null;
+  sampleCount: number;
+  message: string;
+};
+
+export type PromoValidation = {
+  code: string;
+  discountType: 'percent' | 'fixed';
+  discountValue: number;
+  discountAmount: number;
+  message: string;
 };
 
 export type ApiProduct = {
@@ -72,6 +104,14 @@ export type ApiOrder = {
   id: number;
   userId: number;
   totalAmount: number;
+  shippingFee: number;
+  discountAmount: number;
+  paymentMethod: string | null;
+  paymentStatus: string;
+  promoCode: string | null;
+  shippingName: string | null;
+  shippingPhone: string | null;
+  shippingAddress: string | null;
   status: 'pending' | 'confirmed' | 'shipping' | 'delivered' | 'cancelled';
   createdAt: string;
   items: ApiOrderItem[];

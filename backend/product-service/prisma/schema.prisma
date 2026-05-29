@@ -29,12 +29,16 @@ model ProductVariant {
 }
 
 model Review {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  productId Int
-  rating    Int
-  content   String
-  createdAt DateTime @default(now())
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  productId     Int
+  rating        Int
+  content       String
+  height        Int?
+  weight        Int?
+  fitFeeling    String?
+  purchasedSize String?
+  createdAt     DateTime @default(now())
 
   product   Product  @relation(fields: [productId], references: [id])
 }
