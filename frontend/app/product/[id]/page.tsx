@@ -1,191 +1,334 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import Header from '../../components/Header';
-import { ShoppingCart, CheckCircle, Ruler, Info, QrCode } from 'lucide-react';
+import { ShoppingCart, CheckCircle, Ruler, Info, QrCode, Zap } from 'lucide-react';
+import { fetchProductById, fetchProducts } from '../../lib/product-api';
+import { mapApiProduct, type DisplayProduct, type ApiProductVariant } from '../../lib/types';
+import { useCart } from '../../context/CartContext';
+import { getStoredToken } from '../../lib/auth-client';
+
+const SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '2XL', '3XL'];
+
+function sortVariantsBySize(variants: ApiProductVariant[]) {
+  return [...variants].sort((a, b) => {
+    const ai = SIZE_ORDER.indexOf(a.size.toUpperCase());
+    const bi = SIZE_ORDER.indexOf(b.size.toUpperCase());
+    if (ai === -1 && bi === -1) return a.size.localeCompare(b.size);
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
+    return ai - bi;
+  });
+}
 
 export default function ProductDetail() {
-  const [size, setSize] = useState('XL');
+  const [product, setProduct] = useState<DisplayProduct | null>(null);
+  const [related, setRelated] = useState<DisplayProduct[]>([]);
+  const [selectedSize, setSelectedSize] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
+  const [buying, setBuying] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const params = useParams();
+  const { addItem } = useCart();
 
-  return (
-    <div className="min-h-screen bg-background pb-32">
-      <Header showBack />
+  const productId = params.id as string;
 
-      {/* Gallery Section */}
-      <section className="pt-16 relative w-full aspect-[3/4] overflow-hidden bg-surface-container-low">
-        <div className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth h-full no-scrollbar">
-          <div className="flex-none w-full h-full snap-start relative">
-            <img 
-              className="w-full h-full object-cover" 
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuBxkuxSdrjwJRrbpdPgF1GlZOqmEevAVb3meHHXKtO2SfeNS92IjIuqJTbuBzArqB3Ugurh6YuO2uWpQhyhxl7BsaxgF8KsaSmVnVqAZHX8XB0-P-CAGKfb67Q6MM0-X5zolBqxjJfas1AF0-GNeyogtg-DPcTlWxBN6ltlNFQtgXVXqTkJY_as7v4e80Fn4JPRIJDXBx9MHFCqrhAr_OeMo9_UdCD3cyjIuzOvzZIuTZaR6hq4UESqq1MTSw1lJJirJAW4K-ybdj_S" 
-              alt="Product"
-            />
-          </div>
-        </div>
-        <div className="absolute top-4 right-4 glass-card px-3 py-1.5 rounded-full flex items-center space-x-2">
-          <CheckCircle size={16} className="text-secondary" />
-          <span className="font-tech text-[10px] uppercase tracking-widest text-secondary font-bold">Chính hãng</span>
-        </div>
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex space-x-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-secondary"></div>
-          <div className="w-1.5 h-1.5 rounded-full bg-outline-variant/30"></div>
-          <div className="w-1.5 h-1.5 rounded-full bg-outline-variant/30"></div>
-        </div>
-      </section>
+  const sortedVariants = useMemo(
+    () => (product ? sortVariantsBySize(product.variants) : []),
+    [product]
+  );
 
-      {/* Info Section */}
-      <section className="px-5 mt-8">
-        <div className="flex justify-between items-start mb-4">
-          <h1 className="font-display text-4xl leading-none text-on-surface uppercase tracking-tight max-w-[70%]">
-            ÁO HOODIE VAULT CORE - COTTON CAO CẤP
-          </h1>
-          <span className="font-tech text-secondary bg-secondary-fixed-dim/30 px-2 py-1 rounded text-[10px] font-bold uppercase">CÒN HÀNG</span>
-        </div>
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [detail, all] = await Promise.all([
+          fetchProductById(productId),
+          fetchProducts(),
+        ]);
 
-        <div className="flex items-baseline space-x-3 mb-6">
-          <span className="text-on-surface font-display text-3xl">1.250.000 VND</span>
-        </div>
+        if (!detail) {
+          setError('Không tìm thấy sản phẩm');
+          return;
+        }
 
-        <div className="p-4 glass-card rounded-xl border-secondary/20 bg-secondary/5 flex items-center justify-between mb-8">
-          <div>
-            <p className="font-tech text-[10px] text-secondary uppercase tracking-[0.2em] mb-1 font-bold">Giá thành viên</p>
-            <p className="font-display text-2xl text-secondary">1.050.000 VND</p>
-          </div>
-          <button className="bg-secondary text-white px-5 py-2.5 rounded-full font-tech text-[10px] uppercase tracking-widest font-bold active:scale-95 transition-all">
-            THAM GIA NGAY
+        const mapped = mapApiProduct(detail);
+        const variants = sortVariantsBySize(mapped.variants);
+        setProduct({ ...mapped, variants });
+        setSelectedSize(
+          variants.find((v) => v.stock > 0)?.size || variants[0]?.size || ''
+        );
+        setRelated(
+          all
+            .filter((p) => String(p.id) !== productId)
+            .map(mapApiProduct)
+            .slice(0, 4)
+        );
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Không tải được sản phẩm');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void load();
+  }, [productId]);
+
+  const selectedVariant = sortedVariants.find((v) => v.size === selectedSize);
+
+  const requireAuth = () => {
+    const token = getStoredToken();
+    if (!token) {
+      router.push(`/login?redirect=/product/${productId}`);
+      return false;
+    }
+    return true;
+  };
+
+  const handleAddToCart = async () => {
+    if (!product || !selectedVariant || selectedVariant.stock <= 0) return;
+    if (!requireAuth()) return;
+
+    setAdding(true);
+    try {
+      await addItem(selectedVariant.id, 1);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Không thể thêm vào giỏ');
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const handleBuyNow = async () => {
+    if (!product || !selectedVariant || selectedVariant.stock <= 0) return;
+    if (!requireAuth()) return;
+
+    setBuying(true);
+    try {
+      await addItem(selectedVariant.id, 1);
+      router.push('/checkout');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Không thể mua ngay');
+    } finally {
+      setBuying(false);
+    }
+  };
+
+  const outOfStock =
+    !product?.inStock || !selectedVariant || selectedVariant.stock <= 0;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="font-tech text-sm text-on-surface-variant">Đang tải sản phẩm...</p>
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="pt-24 px-5 text-center">
+          <p className="font-display text-3xl uppercase text-on-surface-variant mb-6">
+            {error || 'Không tìm thấy sản phẩm'}
+          </p>
+          <button
+            onClick={() => router.push('/product')}
+            className="font-tech text-xs text-secondary uppercase tracking-widest border-b border-secondary"
+          >
+            Quay lại danh sách
           </button>
-        </div>
+        </main>
+      </div>
+    );
+  }
 
-        {/* Configurations */}
-        <div className="space-y-8">
-          <div>
-            <h3 className="font-tech text-[10px] text-on-surface-variant uppercase mb-4 tracking-widest">Màu sắc: Phantom</h3>
-            <div className="flex space-x-3">
-              {['#2a2a2a', '#0033fe', '#f5f5f1'].map((c, i) => (
-                <button key={c} className={`w-8 h-8 rounded-full border-2 ${i === 0 ? 'border-secondary' : 'border-outline-variant'} p-0.5`}>
-                  <div className="w-full h-full rounded-full" style={{ backgroundColor: c }}></div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-tech text-[10px] text-on-surface-variant uppercase tracking-widest">Kích cỡ</h3>
-              <button className="font-tech text-[10px] text-secondary uppercase font-bold">Bảng size</button>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              {['S', 'M', 'L', 'XL', 'XXL'].map(s => (
-                <button 
-                  key={s}
-                  onClick={() => setSize(s)}
-                  className={`min-w-[60px] h-12 border ${size === s ? 'border-2 border-secondary bg-secondary/5 text-secondary font-bold' : 'border-outline-variant'} rounded-xl font-tech text-xs transition-all`}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Sizing Widget */}
-      <section className="px-5 mt-10">
-        <div className="glass-card p-6 rounded-3xl relative overflow-hidden">
-          <div className="flex items-center space-x-4 mb-6">
-            <div className="chrome-effect w-10 h-10 rounded-xl flex items-center justify-center">
-              <Ruler className="text-secondary" size={20} />
-            </div>
-            <div>
-              <h3 className="font-tech text-md font-bold text-on-surface uppercase tracking-tight">VAULT SIZING ENGINE 2026</h3>
-              <p className="font-body text-[11px] leading-relaxed text-on-surface-variant mt-1">
-                Phân tích dữ liệu thực tế từ 50.000+ khách hàng để đề xuất size tối ưu.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="space-y-1.5">
-              <label className="font-tech text-[10px] text-on-surface-variant uppercase px-1 tracking-widest">Chiều cao (cm)</label>
-              <input 
-                className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-3 font-tech text-sm outline-none focus:border-secondary transition-all" 
-                placeholder="180" 
-                type="number"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="font-tech text-[10px] text-on-surface-variant uppercase px-1 tracking-widest">Cân nặng (kg)</label>
-              <input 
-                className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-3 font-tech text-sm outline-none focus:border-secondary transition-all" 
-                placeholder="75" 
-                type="number"
-              />
-            </div>
-          </div>
-
-          <div className="bg-secondary p-4 rounded-2xl flex items-center justify-between holographic-sweep shadow-xl shadow-secondary/20">
-            <div>
-              <p className="font-tech text-[10px] text-white/70 uppercase tracking-widest">Size gợi ý</p>
-              <p className="font-display text-3xl text-white tracking-widest">XL</p>
-            </div>
-            <div className="text-right">
-              <p className="font-tech text-[10px] text-white/70 uppercase tracking-widest">Độ chính xác</p>
-              <p className="font-tech text-sm font-bold text-white">95%</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Fabric Specs */}
-      <section className="px-5 mt-12">
-        <h3 className="font-display text-2xl uppercase mb-6 flex items-center gap-2">
-          Thông số vải <Info size={18} className="text-on-surface-variant" />
-        </h3>
-        <div className="border-t border-outline-variant/20 pt-8 grid grid-cols-2 gap-x-6 gap-y-8">
-          {[
-            { l: 'Định lượng vải', v: '450 GSM' },
-            { l: 'Chất liệu', v: '100% Cotton' },
-            { l: 'Kiểu dáng', v: 'Oversized' },
-            { l: 'Chi tiết', v: 'Vai trễ (Dropped Shoulders)' }
-          ].map(item => (
-            <div key={item.l}>
-              <span className="font-tech text-[10px] text-on-surface-variant uppercase mb-1 tracking-widest block">{item.l}</span>
-              <span className="font-tech text-sm font-bold text-on-surface uppercase">{item.v}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* NFC Authenticity */}
-      <section className="px-5 mt-16">
-        <div className="p-6 chrome-effect rounded-3xl border border-white/60 flex items-center justify-between shadow-lg">
-          <div className="flex items-center space-x-4">
-            <div className="w-14 h-14 bg-white/50 p-2 rounded-xl flex items-center justify-center">
-              <QrCode size={32} className="text-on-surface opacity-30" />
-            </div>
-            <div>
-              <h4 className="font-tech font-bold text-sm text-on-surface uppercase tracking-tight">Xác nhận chính hãng</h4>
-              <p className="font-tech text-[10px] text-on-surface-variant uppercase tracking-widest">NFC Blockchain Secured</p>
-            </div>
-          </div>
-          <button className="bg-secondary/10 p-3 rounded-full">
-            <Info size={20} className="text-secondary" />
-          </button>
-        </div>
-      </section>
-
-      {/* Sticky Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 p-5 bg-background/80 backdrop-blur-xl z-50">
-        <button 
-          onClick={() => router.push('/cart')}
-          className="w-full h-16 bg-secondary text-white rounded-full flex items-center justify-center space-x-4 shadow-2xl shadow-secondary/30 active:scale-[0.98] transition-all holographic-sweep"
+  const actionButtons = (
+    <div className="space-y-3">
+      <div className="flex flex-col sm:flex-row gap-3">
+        <button
+          onClick={() => void handleAddToCart()}
+          disabled={outOfStock || adding || buying}
+          className="flex-1 h-14 border-2 border-secondary text-secondary bg-white rounded-full flex items-center justify-center gap-2 font-tech text-xs font-bold uppercase tracking-[0.15em] hover:bg-secondary/5 active:scale-[0.98] transition-all disabled:opacity-50"
         >
-          <ShoppingCart size={20} />
-          <span className="font-tech text-xs font-bold uppercase tracking-[0.2em]">THÊM VÀO GIỎ HÀNG — 1.250k</span>
+          <ShoppingCart size={18} />
+          {adding ? 'ĐANG THÊM...' : 'THÊM VÀO GIỎ HÀNG'}
+        </button>
+        <button
+          onClick={() => void handleBuyNow()}
+          disabled={outOfStock || adding || buying}
+          className="flex-1 h-14 bg-secondary text-white rounded-full flex items-center justify-center gap-2 shadow-lg shadow-secondary/25 font-tech text-xs font-bold uppercase tracking-[0.15em] active:scale-[0.98] transition-all holographic-sweep disabled:opacity-50"
+        >
+          <Zap size={18} />
+          {buying ? 'ĐANG XỬ LÝ...' : 'MUA NGAY'}
         </button>
       </div>
+      {outOfStock && (
+        <p className="font-tech text-[10px] text-tertiary uppercase tracking-widest text-center">
+          Hết hàng
+        </p>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-background pb-8">
+      <Header />
+
+      <main className="pt-24 max-w-6xl mx-auto px-5 md:px-8 lg:px-12">
+        <div className="lg:grid lg:grid-cols-[minmax(0,380px)_1fr] lg:gap-10 xl:gap-14 items-start">
+          {/* Ảnh — thu nhỏ */}
+          <section className="relative w-full max-w-sm mx-auto lg:max-w-none">
+            <div className="aspect-4/5 rounded-2xl overflow-hidden bg-surface-container-low">
+              <img
+                className="w-full h-full object-cover"
+                src={product.img}
+                alt={product.name}
+              />
+            </div>
+            <div className="absolute top-3 right-3 glass-card px-3 py-1.5 rounded-full flex items-center gap-2">
+              <CheckCircle size={14} className="text-secondary" />
+              <span className="font-tech text-[9px] uppercase tracking-widest text-secondary font-bold">
+                Chính hãng
+              </span>
+            </div>
+          </section>
+
+          {/* Thông tin */}
+          <div className="mt-8 lg:mt-0">
+            <div className="flex justify-between items-start gap-4 mb-3">
+              <h1 className="font-display text-3xl md:text-4xl leading-tight text-on-surface uppercase tracking-tight">
+                {product.name}
+              </h1>
+              <span
+                className={`font-tech px-2.5 py-1 rounded text-[10px] font-bold uppercase shrink-0 ${
+                  product.inStock
+                    ? 'text-secondary bg-secondary/10'
+                    : 'text-tertiary bg-tertiary-container'
+                }`}
+              >
+                {product.inStock ? 'CÒN HÀNG' : 'HẾT HÀNG'}
+              </span>
+            </div>
+
+            <p className="font-display text-3xl text-on-surface mb-6">{product.price}</p>
+
+            {/* Size */}
+            <div className="mb-6">
+              <h3 className="font-tech text-[10px] text-on-surface-variant uppercase tracking-widest mb-3">
+                Kích cỡ
+              </h3>
+              <div className="flex flex-wrap gap-2.5">
+                {sortedVariants.map((v) => (
+                  <button
+                    key={v.id}
+                    onClick={() => setSelectedSize(v.size)}
+                    disabled={v.stock <= 0}
+                    className={`min-w-12 h-11 px-3 border rounded-xl font-tech text-xs transition-all ${
+                      selectedSize === v.size
+                        ? 'border-2 border-secondary bg-secondary/5 text-secondary font-bold'
+                        : 'border-outline-variant text-on-surface'
+                    } ${v.stock <= 0 ? 'opacity-40 cursor-not-allowed line-through' : ''}`}
+                  >
+                    {v.size}
+                  </button>
+                ))}
+              </div>
+              {selectedVariant && selectedVariant.stock > 0 && (
+                <p className="font-tech text-[10px] text-on-surface-variant mt-2 uppercase">
+                  Còn {selectedVariant.stock} sản phẩm
+                </p>
+              )}
+            </div>
+
+            {/* Nút hành động — ngay dưới size */}
+            <div className="mb-8">{actionButtons}</div>
+
+            <section className="mb-8">
+              <div className="glass-card p-5 rounded-2xl">
+                <div className="flex items-center gap-3">
+                  <div className="chrome-effect w-9 h-9 rounded-lg flex items-center justify-center shrink-0">
+                    <Ruler className="text-secondary" size={18} />
+                  </div>
+                  <div>
+                    <h3 className="font-tech text-sm font-bold text-on-surface uppercase tracking-tight">
+                      VAULT SIZING ENGINE 2026
+                    </h3>
+                    <p className="font-body text-[11px] text-on-surface-variant mt-0.5">
+                      Đề xuất size tối ưu từ 50.000+ khách hàng.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className="mb-8">
+              <h3 className="font-display text-xl uppercase mb-3 flex items-center gap-2">
+                Mô tả <Info size={16} className="text-on-surface-variant" />
+              </h3>
+              <p className="font-body text-sm text-on-surface-variant leading-relaxed">
+                {product.desc}
+              </p>
+            </section>
+
+            <section className="mb-10">
+              <div className="p-5 chrome-effect rounded-2xl border border-white/60 flex items-center gap-4">
+                <div className="w-12 h-12 bg-white/50 p-2 rounded-xl flex items-center justify-center shrink-0">
+                  <QrCode size={28} className="text-on-surface opacity-30" />
+                </div>
+                <div>
+                  <h4 className="font-tech font-bold text-sm text-on-surface uppercase tracking-tight">
+                    Xác nhận chính hãng
+                  </h4>
+                  <p className="font-tech text-[10px] text-on-surface-variant uppercase tracking-widest">
+                    NFC Blockchain Secured
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            {related.length > 0 && (
+              <section className="pb-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-display text-xl uppercase">Có thể bạn thích</h3>
+                  <button
+                    onClick={() => router.push('/product')}
+                    className="font-tech text-[10px] text-secondary uppercase tracking-widest border-b border-secondary"
+                  >
+                    Xem tất cả
+                  </button>
+                </div>
+                <div className="flex overflow-x-auto gap-4 pb-2 no-scrollbar snap-x">
+                  {related.map((p) => (
+                    <div
+                      key={p.id}
+                      onClick={() => router.push(`/product/${p.id}`)}
+                      className="shrink-0 w-36 cursor-pointer group snap-start"
+                    >
+                      <div className="aspect-3/4 bg-surface-container-high rounded-xl overflow-hidden mb-2">
+                        <img
+                          src={p.img}
+                          alt={p.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      </div>
+                      <p className="font-tech text-[11px] font-bold text-on-surface uppercase truncate">
+                        {p.name}
+                      </p>
+                      <p className="font-tech text-[11px] text-secondary">{p.price}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

@@ -6,40 +6,41 @@ import { Truck, Check, MapPin, Package, Copy, MessageCircle, AlertCircle } from 
 export default function OrderDetail() {
   return (
     <div className="min-h-screen bg-background">
-      <Header title="Chi tiết đơn hàng" showBack />
-      
-      <main className="max-w-4xl mx-auto px-5 py-24">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Column */}
-          <div className="lg:col-span-12 flex justify-between items-end mb-4 px-2">
-            <h2 className="font-display text-4xl tracking-widest text-on-surface">#VT-99281</h2>
-            <div className="glass-card px-4 py-1.5 rounded-full flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
-              <span className="font-tech text-[10px] font-bold text-secondary uppercase tracking-[0.2em]">ĐANG GIAO</span>
-            </div>
-          </div>
+      <Header title="Chi tiết đơn hàng" />
 
+      <main className="pt-24 pb-16 px-5 md:px-8 lg:px-12 max-w-6xl mx-auto">
+
+        {/* Order header */}
+        <div className="flex justify-between items-end mb-8">
+          <h2 className="font-display text-4xl md:text-5xl tracking-widest text-on-surface">#VT-99281</h2>
+          <div className="glass-card px-4 py-1.5 rounded-full flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+            <span className="font-tech text-[10px] font-bold text-secondary uppercase tracking-[0.2em]">ĐANG GIAO</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+          {/* ── Main content ── */}
           <section className="lg:col-span-8 space-y-6">
-            {/* Map Visual */}
-            <div className="relative h-[400px] rounded-3xl overflow-hidden glass-card group shadow-2xl">
-              <img 
-                className="w-full h-full object-cover grayscale brightness-110" 
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHSNROoYJP0GlCJ41xOYipjLQQqWGh_qVZnF8dqFsfLXZv5wEGmAFtosGcJA_NlUrZusAMYN2ifTOm1HDCAhaoRX4WioOIrlHJ_IZE1dODQJ9oiHGP8N35HCrMhyNYg5kRoFSXULAbWj_4RG5NTxwiwTXwDrpOnG0wZg-bHEyljs_lomiXwVjLmntcuK67H-auoqFQ9Z-YnWC0QSF4ChQygTnD0GMyJ-mN4jvtzZnC7aSXgtNmf3RVl7TCeHP16vX63pQtJM0DE39m" 
+
+            {/* Map */}
+            <div className="relative h-75 md:h-100 rounded-3xl overflow-hidden glass-card group shadow-2xl">
+              <img
+                className="w-full h-full object-cover grayscale brightness-110"
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHSNROoYJP0GlCJ41xOYipjLQQqWGh_qVZnF8dqFsfLXZv5wEGmAFtosGcJA_NlUrZusAMYN2ifTOm1HDCAhaoRX4WioOIrlHJ_IZE1dODQJ9oiHGP8N35HCrMhyNYg5kRoFSXULAbWj_4RG5NTxwiwTXwDrpOnG0wZg-bHEyljs_lomiXwVjLmntcuK67H-auoqFQ9Z-YnWC0QSF4ChQygTnD0GMyJ-mN4jvtzZnC7aSXgtNmf3RVl7TCeHP16vX63pQtJM0DE39m"
                 alt="Delivery Map"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-surface/40 via-transparent to-transparent"></div>
-              {/* Floating Holographic Sweep */}
+              <div className="absolute inset-0 bg-linear-to-t from-surface/40 via-transparent to-transparent"></div>
               <div className="absolute inset-0 holographic-sweep opacity-30 pointer-events-none"></div>
             </div>
 
             {/* Tracking Steps */}
             <div className="glass-card p-8 rounded-3xl relative overflow-hidden">
               <div className="relative space-y-10">
-                {/* Connecting Line */}
-                <div className="absolute left-[13px] top-2 bottom-5 w-[2px] bg-outline-variant/30"></div>
-                <div className="absolute left-[13px] top-2 h-[70%] w-[2px] bg-secondary"></div>
+                <div className="absolute left-3.25 top-2 bottom-5 w-0.5 bg-outline-variant/30"></div>
+                <div className="absolute left-3.25 top-2 h-[70%] w-0.5 bg-secondary"></div>
 
-                {/* Step: Future */}
                 <div className="flex gap-6 relative">
                   <div className="z-10 w-7 h-7 rounded-full bg-surface-container border-2 border-outline-variant flex items-center justify-center"></div>
                   <div className="flex-1 pb-4">
@@ -48,7 +49,6 @@ export default function OrderDetail() {
                   </div>
                 </div>
 
-                {/* Step: Current */}
                 <div className="flex gap-6 relative">
                   <div className="z-10 w-7 h-7 rounded-full bg-secondary flex items-center justify-center shadow-lg shadow-secondary/30">
                     <Truck size={14} className="text-white fill-current" />
@@ -60,7 +60,6 @@ export default function OrderDetail() {
                   </div>
                 </div>
 
-                {/* Step: Past */}
                 <div className="flex gap-6 relative">
                   <div className="z-10 w-7 h-7 rounded-full bg-secondary flex items-center justify-center">
                     <Check size={14} className="text-white" />
@@ -71,7 +70,6 @@ export default function OrderDetail() {
                   </div>
                 </div>
 
-                {/* Step: Past */}
                 <div className="flex gap-6 relative">
                   <div className="z-10 w-7 h-7 rounded-full bg-secondary flex items-center justify-center">
                     <Check size={14} className="text-white" />
@@ -85,17 +83,18 @@ export default function OrderDetail() {
             </div>
           </section>
 
-          {/* Sidebar Info */}
+          {/* ── Sidebar ── */}
           <aside className="lg:col-span-4 space-y-6">
+
             {/* Product Card */}
             <div className="glass-card overflow-hidden rounded-3xl border border-outline-variant/30">
-              <div className="h-64 relative group overflow-hidden">
-                <img 
-                  className="w-full h-full object-cover" 
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuDHiDtTb-tTLtCH3MrFLinkKsebAKaJgBDmHJrB7C0lWXsazb7rVFbLSPa80Om9nUjGQGMHsl159ObLa4AaTYX1v8lTnvqCNc8yig5r69lvBpEcSyIume91YMuQi1NDi3SSZVS0ZP_FgEpxuoCw0IpxQeb8Wj38G5-HYdjZRwkgi_u6WEjTyUHaTO5Y7Rtob2ub8FZxUB7JVO1u0p4PnfR8AIajhoTudGJGcZ_e-6TTvAXHhHfEE6pu1l1LHXhMe8PIsyya5buWGtoE" 
-                  alt="Product" 
+              <div className="h-56 md:h-64 relative group overflow-hidden">
+                <img
+                  className="w-full h-full object-cover"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuDHiDtTb-tTLtCH3MrFLinkKsebAKaJgBDmHJrB7C0lWXsazb7rVFbLSPa80Om9nUjGQGMHsl159ObLa4AaTYX1v8lTnvqCNc8yig5r69lvBpEcSyIume91YMuQi1NDi3SSZVS0ZP_FgEpxuoCw0IpxQeb8Wj38G5-HYdjZRwkgi_u6WEjTyUHaTO5Y7Rtob2ub8FZxUB7JVO1u0p4PnfR8AIajhoTudGJGcZ_e-6TTvAXHhHfEE6pu1l1LHXhMe8PIsyya5buWGtoE"
+                  alt="Product"
                 />
-                <div className="absolute bottom-0 left-0 right-0 p-5 bg-gradient-to-t from-black/60 to-transparent">
+                <div className="absolute bottom-0 left-0 right-0 p-5 bg-linear-to-t from-black/60 to-transparent">
                   <p className="font-tech text-[9px] text-white/70 uppercase tracking-[0.3em] font-bold">STREETWEAR ARCHIVE</p>
                   <h3 className="font-tech text-md font-bold text-white uppercase mt-1">Neo-Tokyo Tech Shell V1</h3>
                 </div>
@@ -121,7 +120,7 @@ export default function OrderDetail() {
               <div>
                 <p className="font-tech text-sm font-bold uppercase text-on-surface">Nguyễn Văn A</p>
                 <p className="font-body text-xs text-on-surface-variant opacity-70 mt-1 leading-relaxed">
-                  Số 123, Đường Láng, Phường Láng Thượng,<br/>
+                  Số 123, Đường Láng, Phường Láng Thượng,<br />
                   Quận Đống Đa, Hà Nội, Việt Nam
                 </p>
                 <p className="font-tech text-[10px] text-secondary mt-3 font-bold uppercase tracking-widest cursor-pointer">(+84) 90 123 4567</p>
@@ -137,7 +136,9 @@ export default function OrderDetail() {
               <div className="flex justify-between items-start">
                 <div>
                   <p className="font-tech text-sm font-bold uppercase text-on-surface">VAULT Express Premium</p>
-                  <p className="font-tech text-[10px] text-on-surface-variant opacity-60 mt-1 uppercase tracking-widest">Mã vận đơn: <span className="text-secondary select-all">VEX-9921-8812</span></p>
+                  <p className="font-tech text-[10px] text-on-surface-variant opacity-60 mt-1 uppercase tracking-widest">
+                    Mã vận đơn: <span className="text-secondary select-all">VEX-9921-8812</span>
+                  </p>
                 </div>
                 <button className="p-2.5 bg-secondary-container/10 rounded-xl hover:bg-secondary-container/20 transition-colors text-secondary">
                   <Copy size={16} />
@@ -146,7 +147,7 @@ export default function OrderDetail() {
             </div>
 
             {/* Actions */}
-            <div className="flex flex-col gap-3 pt-4">
+            <div className="flex flex-col gap-3">
               <button className="w-full bg-secondary text-white h-14 rounded-2xl font-tech text-xs font-bold uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:opacity-95 shadow-xl shadow-secondary/10 transition-all active:scale-95">
                 <MessageCircle size={18} />
                 Liên hệ hỗ trợ

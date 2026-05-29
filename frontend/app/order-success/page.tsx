@@ -1,108 +1,158 @@
 'use client';
 
-import { motion } from 'motion/react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import Header from '../components/Header';
 import { BadgeCheck, Truck, Trophy } from 'lucide-react';
+import { fetchOrderById } from '../lib/order-api';
+import type { ApiOrder } from '../lib/types';
+import { formatVND } from '../lib/utils';
 
-export default function OrderSuccess() {
+function OrderSuccessContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [order, setOrder] = useState<ApiOrder | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadOrder = async () => {
+      const stored = sessionStorage.getItem('lastOrder');
+      if (stored) {
+        try {
+          setOrder(JSON.parse(stored) as ApiOrder);
+          setLoading(false);
+          return;
+        } catch {
+          sessionStorage.removeItem('lastOrder');
+        }
+      }
+
+      const orderId = searchParams.get('orderId');
+      if (orderId) {
+        try {
+          const fetched = await fetchOrderById(orderId);
+          if (fetched) {
+            setOrder(fetched);
+            sessionStorage.setItem('lastOrder', JSON.stringify(fetched));
+          }
+        } catch {
+          setOrder(null);
+        }
+      }
+
+      setLoading(false);
+    };
+
+    void loadOrder();
+  }, [searchParams]);
+
+  const orderId = order?.id;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="font-tech text-sm text-on-surface-variant">Đang tải thông tin đơn hàng...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background overflow-hidden relative selection:bg-secondary selection:text-white">
+    <div className="min-h-screen bg-background">
       <Header />
-      
-      <main className="pt-24 pb-12 px-5 flex flex-col items-center justify-center min-h-screen">
-        {/* Background Visual Elements */}
-        <div className="fixed top-0 left-0 w-full h-full pointer-events-none -z-10 overflow-hidden opacity-50">
-          <div className="absolute top-1/4 -left-24 w-96 h-96 bg-secondary/10 rounded-full blur-[120px]"></div>
-          <div className="absolute bottom-1/4 -right-24 w-64 h-64 bg-tertiary/5 rounded-full blur-[100px]"></div>
-        </div>
 
-        <div className="w-full max-w-md flex flex-col items-center text-center">
-          {/* Animated Success Visual */}
-          <div className="relative mb-12 flex justify-center items-center">
-            <motion.div 
-              initial={{ scale: 0.5, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: "spring", damping: 12 }}
-              className="relative z-10"
-            >
-              <div className="w-48 h-48 md:w-64 md:h-64 flex items-center justify-center">
-                <div className="absolute inset-0 bg-secondary/5 rounded-full blur-3xl animate-pulse"></div>
-                <div className="absolute inset-0 flex items-center justify-center opacity-10">
-                  <BadgeCheck size={200} className="text-secondary" />
-                </div>
-                <BadgeCheck size={160} className="text-secondary drop-shadow-[0_0_20px_rgba(0,36,192,0.4)]" strokeWidth={1} />
-              </div>
-              <div className="absolute inset-0 border-2 border-secondary/20 rounded-full holographic-sweep opacity-40"></div>
-            </motion.div>
+      <main className="pt-24 pb-16 px-5 md:px-8 max-w-2xl mx-auto">
+        <div className="flex flex-col items-center text-center">
+          <div className="mb-8 flex justify-center">
+            <div className="relative">
+              <div className="absolute inset-0 bg-secondary/10 rounded-full blur-2xl scale-150" />
+              <BadgeCheck
+                size={120}
+                className="relative text-secondary drop-shadow-[0_0_20px_rgba(0,36,192,0.35)]"
+                strokeWidth={1}
+              />
+            </div>
           </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <h1 className="font-display text-5xl mb-4 tracking-tight uppercase text-on-surface">
-              ĐẶT HÀNG THÀNH CÔNG
-            </h1>
-            <p className="font-tech text-md font-bold text-secondary mb-10 max-w-xs mx-auto">
-              Các món đồ công nghệ cao của bạn đang được chuẩn bị.
-            </p>
-          </motion.div>
+          <h1 className="font-display text-4xl md:text-5xl mb-3 tracking-tight uppercase text-on-surface">
+            ĐẶT HÀNG THÀNH CÔNG
+          </h1>
+          <p className="font-tech text-sm font-bold text-secondary mb-8 max-w-sm">
+            Các món đồ của bạn đang được chuẩn bị.
+          </p>
 
-          <motion.div 
-             initial={{ opacity: 0, y: 20 }}
-             animate={{ opacity: 1, y: 0 }}
-             transition={{ delay: 0.5 }}
-             className="grid grid-cols-2 gap-4 w-full mb-10"
-          >
-            <div className="glass-card p-5 rounded-3xl flex flex-col items-start justify-between h-36 border-outline-variant/20 shadow-sm">
-              <span className="text-on-surface-variant font-tech text-[10px] uppercase tracking-widest opacity-60">Mã đơn hàng</span>
-              <span className="font-tech text-sm font-bold text-on-surface">#VLTSGN-2024001</span>
+          <div className="grid grid-cols-2 gap-3 w-full mb-8">
+            <div className="glass-card p-4 rounded-2xl flex flex-col items-start gap-2 text-left">
+              <span className="font-tech text-[10px] uppercase tracking-widest text-on-surface-variant opacity-60">
+                Mã đơn hàng
+              </span>
+              <span className="font-tech text-sm font-bold text-on-surface">
+                {orderId ? `#VAULT-${orderId}` : '—'}
+              </span>
             </div>
-            <div className="glass-card p-5 rounded-3xl flex flex-col items-start justify-between h-36 border-outline-variant/20 shadow-sm">
-              <span className="text-on-surface-variant font-tech text-[10px] uppercase tracking-widest opacity-60">Dự kiến giao</span>
-              <span className="font-tech text-sm font-bold text-on-surface">2-3 NGÀY</span>
+            <div className="glass-card p-4 rounded-2xl flex flex-col items-start gap-2 text-left">
+              <span className="font-tech text-[10px] uppercase tracking-widest text-on-surface-variant opacity-60">
+                Dự kiến giao
+              </span>
+              <span className="font-tech text-sm font-bold text-on-surface">3-5 NGÀY</span>
             </div>
-            <div className="col-span-2 glass-card p-5 rounded-3xl flex items-center justify-between border-l-4 border-secondary shadow-lg">
-              <div className="flex flex-col items-start text-left">
-                <span className="text-on-surface-variant font-tech text-[10px] uppercase tracking-widest opacity-60">Điểm thưởng Vault</span>
-                <span className="font-tech text-md font-bold text-secondary">+1,000 ĐIỂM</span>
-              </div>
-              <div className="bg-secondary/10 p-3 rounded-full">
-                <Trophy size={20} className="text-secondary" />
-              </div>
+            <div className="glass-card p-4 rounded-2xl flex flex-col items-start gap-2 text-left">
+              <span className="font-tech text-[10px] uppercase tracking-widest text-on-surface-variant opacity-60">
+                Tổng thanh toán
+              </span>
+              <span className="font-tech text-sm font-bold text-on-surface">
+                {order ? formatVND(order.totalAmount) : '—'}
+              </span>
             </div>
-          </motion.div>
+            <div className="glass-card p-4 rounded-2xl flex flex-col items-start gap-2 text-left border-l-4 border-secondary">
+              <span className="font-tech text-[10px] uppercase tracking-widest text-on-surface-variant opacity-60">
+                Trạng thái
+              </span>
+              <span className="font-tech text-sm font-bold text-secondary uppercase">
+                {order?.status === 'pending' ? 'Chờ xử lý' : order?.status ?? 'Chờ xử lý'}
+              </span>
+            </div>
+          </div>
 
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
-            className="flex flex-col gap-4 w-full"
-          >
-            <button 
+          <div className="flex flex-col sm:flex-row gap-3 w-full">
+            <button
+              type="button"
               onClick={() => router.push('/orders')}
-              className="w-full h-16 bg-secondary text-white font-tech text-xs font-bold tracking-[0.2em] rounded-2xl shadow-xl shadow-secondary/20 hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-3 holographic-sweep"
+              className="flex-1 h-14 bg-secondary text-white font-tech text-xs font-bold tracking-[0.15em] rounded-2xl shadow-lg shadow-secondary/20 hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-2"
             >
               <Truck size={18} />
               THEO DÕI ĐƠN HÀNG
             </button>
-            <button 
+            <button
+              type="button"
               onClick={() => router.push('/')}
-              className="w-full h-16 glass-card border border-outline-variant/30 text-on-surface font-tech text-xs font-bold tracking-[0.2em] rounded-2xl hover:bg-surface-container-high transition-all active:scale-95"
+              className="flex-1 h-14 border border-outline-variant/30 text-on-surface font-tech text-xs font-bold tracking-[0.15em] rounded-2xl hover:bg-surface-container-low transition-all active:scale-95"
             >
               TIẾP TỤC MUA SẮM
             </button>
-          </motion.div>
+          </div>
 
-          <p className="mt-12 font-tech text-[10px] opacity-40 uppercase tracking-widest leading-loose">
-            Hóa đơn điện tử đã được gửi đến email đăng ký của bạn.
-          </p>
+          {!order && (
+            <p className="mt-6 font-body text-sm text-on-surface-variant">
+              Đơn hàng đã được tạo. Xem chi tiết tại trang Đơn hàng.
+            </p>
+          )}
         </div>
       </main>
     </div>
+  );
+}
+
+export default function OrderSuccess() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <p className="font-tech text-sm text-on-surface-variant">Đang tải...</p>
+        </div>
+      }
+    >
+      <OrderSuccessContent />
+    </Suspense>
   );
 }
