@@ -71,7 +71,7 @@ export default function Header({ title, showBack }: HeaderProps) {
   return (
     <>
       {/* ── 1. THANH HEADER CỐ ĐỊNH (Sử dụng mã màu zinc chuẩn) ── */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-zinc-200 shadow-sm h-16">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-outline-variant/40 shadow-sm h-16">
         <div className="h-full max-w-7xl mx-auto px-5 md:px-8 lg:px-12 flex items-center relative">
 
           {/* ── MOBILE LEFT: Hiển thị đồng thời cả nút quay lại và menu 3 gạch ── */}
@@ -101,7 +101,7 @@ export default function Header({ title, showBack }: HeaderProps) {
           {!title && (
             <div
               onClick={() => { router.push('/'); setIsOpen(false); }}
-              className="md:hidden absolute left-1/2 -translate-x-1/2 font-display text-4xl tracking-[0.2em] text-zinc-900 uppercase cursor-pointer select-none z-10"
+              className="md:hidden absolute left-1/2 -translate-x-1/2 font-display text-4xl tracking-[0.2em] uppercase cursor-pointer select-none z-10 vault-gradient-text"
             >
               VAULT
             </div>
@@ -122,7 +122,7 @@ export default function Header({ title, showBack }: HeaderProps) {
               className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity select-none"
             >
               <img src="/images/logo.png" alt="VAULT" className="w-8 h-8 object-contain" />
-              <span className="font-display text-3xl lg:text-[2rem] tracking-[0.2em] text-zinc-900 uppercase">VAULT</span>
+              <span className="font-display text-3xl lg:text-[2rem] tracking-[0.2em] uppercase vault-gradient-text">VAULT</span>
             </div>
             {title && (
               <>
@@ -141,10 +141,10 @@ export default function Header({ title, showBack }: HeaderProps) {
                 <button
                   key={link.path}
                   onClick={() => router.push(link.path)}
-                  className={`font-tech text-[11px] uppercase tracking-widest transition-colors duration-150 ${
+                  className={`font-tech text-[11px] uppercase tracking-widest transition-all duration-300 ${
                     pathname === link.path
-                      ? 'text-zinc-900 font-bold'
-                      : 'text-zinc-500 hover:text-zinc-900'
+                      ? 'font-bold vault-gradient-text'
+                      : 'text-on-surface-variant hover:text-secondary'
                   }`}
                 >
                   {link.label}
@@ -189,7 +189,7 @@ export default function Header({ title, showBack }: HeaderProps) {
             >
               <ShoppingBag size={24} />
               {itemCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-zinc-900 text-white text-[10px] min-w-4 h-4 px-0.5 rounded-full flex items-center justify-center font-bold">
+                <span className="absolute -top-1 -right-1 bg-linear-to-br from-secondary to-accent-cyan text-white text-[10px] min-w-4 h-4 px-0.5 rounded-full flex items-center justify-center font-bold shadow-md">
                   {itemCount > 99 ? '99+' : itemCount}
                 </span>
               )}
@@ -214,13 +214,13 @@ export default function Header({ title, showBack }: HeaderProps) {
                   }}
                   className={`font-tech text-sm text-left uppercase tracking-widest py-4 px-5 rounded-xl transition-all duration-200 block w-full ${
                     isActive
-                      ? 'bg-zinc-900 text-amber-400 font-bold shadow-md' 
-                      : 'bg-zinc-50 text-zinc-700 hover:bg-zinc-100 active:bg-zinc-200 border border-zinc-200/80' 
+                      ? 'vault-btn-primary font-bold shadow-md text-white'
+                      : 'bg-surface-container-low text-on-surface-variant hover:bg-secondary/5 active:bg-secondary/10 border border-outline-variant/50 hover:border-secondary/30'
                   }`}
                 >
                   <div className="flex items-center justify-between w-full">
                     <span>{link.label}</span>
-                    <span className={`text-xs ${isActive ? 'text-amber-400' : 'text-zinc-400'}`}>
+                    <span className={`text-xs ${isActive ? 'text-white/80' : 'text-accent-cyan'}`}>
                       ➔
                     </span>
                   </div>

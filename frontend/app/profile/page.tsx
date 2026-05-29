@@ -193,7 +193,7 @@ export default function Profile() {
               <div className="relative z-10">
                 <p className="font-tech text-[10px] text-secondary uppercase mb-2 tracking-[0.3em] font-bold">Truy Cập Độc Quyền</p>
                 <h3 className="font-tech text-lg font-bold mb-6 tracking-tight text-on-surface">MỞ BÁN SS.24 SAU 02:14:55</h3>
-                <button className="w-full py-4 bg-secondary text-white font-tech text-[10px] font-bold uppercase tracking-[0.3em] active:scale-95 transition-all rounded-xl shadow-lg shadow-secondary/20">
+                <button className="w-full py-4 vault-btn-primary font-tech text-[10px] font-bold uppercase tracking-[0.3em] active:scale-95 transition-all rounded-xl">
                   Thông Báo Cho Tôi
                 </button>
               </div>
@@ -275,7 +275,7 @@ export default function Profile() {
                   <p className="mt-5 font-body text-[11px] text-on-surface-variant text-center max-w-50 leading-relaxed opacity-70">
                     Đổi điểm lấy các sản phẩm lưu trữ và phụ kiện độc quyền.
                   </p>
-                  <button className="mt-8 px-10 py-4 rounded-full bg-secondary text-white font-tech text-[10px] font-bold uppercase tracking-widest hover:shadow-xl shadow-secondary/20 transition-all active:scale-95">
+                  <button className="mt-8 px-10 py-4 rounded-full vault-btn-primary font-tech text-[10px] font-bold uppercase tracking-widest transition-all active:scale-95">
                     Đổi Ngay
                   </button>
                 </div>

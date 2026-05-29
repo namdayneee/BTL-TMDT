@@ -10,19 +10,27 @@
   --color-surface-container: #f5f5f5;
   --color-surface-container-high: #efefef;
   --color-surface-container-highest: #e8e8e8;
-  
-  --color-on-surface: #1c1c16;
+
+  --color-on-surface: #0a0a0a;
   --color-on-surface-variant: #444844;
   --color-outline-variant: #c5c7c2;
-  
-  --color-primary: #5d5f5c;
-  --color-secondary: #0024c0;
-  --color-secondary-container: #0033fe;
-  --color-secondary-fixed-dim: #bcc3ff;
-  
-  --color-tertiary: #ae3200;
-  --color-tertiary-container: #fff2ef;
-  
+
+  /* Vault street palette — primary: electric cyan (Tuyên ngôn / banner) */
+  --color-primary: #0a0a0a;
+  --color-secondary: #00b7eb;
+  --color-secondary-container: #33ccff;
+  --color-secondary-fixed-dim: #b3ecff;
+
+  --color-accent-cyan: #00b7eb;
+  --color-accent-cyan-dim: #b3ecff;
+  --color-accent-yellow: #ffc800;
+  --color-accent-yellow-dim: #fff0b3;
+  --color-accent-pink: #00b7eb;
+  --color-accent-pink-dim: #b3ecff;
+
+  --color-tertiary: #ffc800;
+  --color-tertiary-container: #fff9e6;
+
   --font-display: "Bebas Neue", cursive;
   --font-tech: "Space Grotesk", sans-serif;
   --font-body: "Be Vietnam Pro", sans-serif;
@@ -35,18 +43,48 @@
   }
 }
 
+/* ── Keyframes ── */
+@keyframes vault-gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes vault-neon-pulse {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(0, 183, 235, 0.5), 0 0 28px rgba(51, 204, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(0, 183, 235, 0.7), 0 0 40px rgba(51, 204, 255, 0.5);
+  }
+}
+
+@keyframes vault-shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes vault-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes vault-line-grow {
+  from { width: 0; }
+  to { width: 3rem; }
+}
+
 @layer components {
   .glass-card {
     background: rgba(255, 255, 255, 0.45);
     backdrop-filter: blur(16px);
     border: 1px solid rgba(197, 199, 194, 0.3);
   }
-  
+
   .holographic-sweep {
     position: relative;
     overflow: hidden;
   }
-  
+
   .holographic-sweep::after {
     content: '';
     position: absolute;
@@ -54,18 +92,147 @@
     left: -100%;
     width: 50%;
     height: 200%;
-    background: linear-gradient(to right, transparent, rgba(255,255,255,0.3), transparent);
+    background: linear-gradient(to right, transparent, rgba(255,255,255,0.4), transparent);
     transform: rotate(30deg);
     transition: left 0.6s ease;
   }
-  
+
   .holographic-sweep:hover::after {
     left: 150%;
   }
 
   .chrome-effect {
-    background: linear-gradient(135deg, #e2e3df 0%, #ffffff 100%);
-    box-shadow: inset 0 1px 1px rgba(255,255,255,0.8), 0 2px 4px rgba(0,0,0,0.05);
+    background: linear-gradient(135deg, #fff9e6 0%, #ffffff 50%, #e8f9ff 100%);
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.8), 0 2px 8px rgba(0, 183, 235, 0.15);
+  }
+
+  /* Animated gradient text — banner style */
+  .vault-gradient-text {
+    background: linear-gradient(
+      90deg,
+      #00b7eb 0%,
+      #ffc800 35%,
+      #33ccff 70%,
+      #00b7eb 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: vault-gradient-shift 4s ease infinite;
+  }
+
+  /* Section title with animated underline */
+  .vault-section-title {
+    @apply font-display text-4xl md:text-5xl text-on-surface uppercase mb-2;
+  }
+
+  .vault-accent-line {
+    height: 3px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, #00b7eb, #ffc800, #33ccff);
+    background-size: 200% 100%;
+    animation: vault-line-grow 0.8s ease forwards, vault-gradient-shift 3s ease infinite;
+    width: 3rem;
+  }
+
+  /* Primary CTA — electric cyan (Tuyên ngôn) */
+  .vault-btn-primary {
+    background: linear-gradient(135deg, #0099c7 0%, #00b7eb 40%, #33ccff 75%, #66d9ff 100%);
+    background-size: 200% 200%;
+    animation: vault-gradient-shift 3s ease infinite;
+    @apply text-white font-tech text-xs uppercase tracking-widest shadow-lg;
+    box-shadow: 0 4px 20px rgba(0, 183, 235, 0.45);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .vault-btn-primary:hover {
+    animation: vault-gradient-shift 1.5s ease infinite, vault-neon-pulse 2s ease infinite;
+    transform: scale(1.03);
+  }
+
+  /* Secondary outline button */
+  .vault-btn-outline {
+    @apply font-tech text-xs uppercase tracking-widest border-2 transition-all duration-300;
+    border-image: linear-gradient(135deg, #00b7eb, #33ccff) 1;
+    border: 2px solid transparent;
+    background: linear-gradient(white, white) padding-box,
+                linear-gradient(135deg, #00b7eb, #ffc800, #33ccff) border-box;
+    color: #0a0a0a;
+  }
+
+  .vault-btn-outline:hover {
+    background: linear-gradient(135deg, rgba(0,183,235,0.1), rgba(51,204,255,0.08)) padding-box,
+                linear-gradient(135deg, #00b7eb, #ffc800, #33ccff) border-box;
+    color: #00b7eb;
+  }
+
+  /* Yellow accent button */
+  .vault-btn-yellow {
+    background: linear-gradient(135deg, #ffc800 0%, #ffaa00 100%);
+    @apply text-on-surface font-tech text-xs uppercase tracking-widest font-bold;
+    box-shadow: 0 4px 16px rgba(255, 200, 0, 0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .vault-btn-yellow:hover {
+    transform: scale(1.03);
+    box-shadow: 0 6px 24px rgba(255, 200, 0, 0.55);
+  }
+
+  /* Cyan accent button */
+  .vault-btn-cyan {
+    background: linear-gradient(135deg, #00d4ff 0%, #00a8cc 100%);
+    @apply text-white font-tech text-xs uppercase tracking-widest;
+    box-shadow: 0 4px 16px rgba(0, 212, 255, 0.35);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .vault-btn-cyan:hover {
+    transform: scale(1.03);
+    box-shadow: 0 6px 24px rgba(0, 212, 255, 0.5);
+  }
+
+  /* Neon glow card border on hover */
+  .vault-glow-card {
+    @apply transition-all duration-300;
+  }
+
+  .vault-glow-card:hover {
+    box-shadow: 0 0 0 1px rgba(0, 183, 235, 0.35),
+                0 8px 32px rgba(0, 183, 235, 0.2),
+                0 0 24px rgba(51, 204, 255, 0.15);
+  }
+
+  /* Tag / badge variants */
+  .vault-badge-pink {
+    @apply bg-secondary text-white font-bold rounded-full uppercase;
+  }
+
+  .vault-badge-yellow {
+    @apply bg-accent-yellow text-on-surface font-bold rounded-full uppercase;
+  }
+
+  .vault-badge-cyan {
+    @apply bg-accent-cyan text-white font-bold rounded-full uppercase;
+  }
+
+  /* Link with gradient hover */
+  .vault-link {
+    @apply font-tech text-[10px] uppercase tracking-widest transition-all duration-300;
+    color: var(--color-on-surface-variant);
+  }
+
+  .vault-link:hover {
+    background: linear-gradient(90deg, #00b7eb, #33ccff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Floating decoration */
+  .vault-float {
+    animation: vault-float 3s ease-in-out infinite;
   }
 }
 

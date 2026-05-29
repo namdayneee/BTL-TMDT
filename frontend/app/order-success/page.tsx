@@ -68,7 +68,7 @@ function OrderSuccessContent() {
               <div className="absolute inset-0 bg-secondary/10 rounded-full blur-2xl scale-150" />
               <BadgeCheck
                 size={120}
-                className="relative text-secondary drop-shadow-[0_0_20px_rgba(0,36,192,0.35)]"
+                className="relative text-secondary drop-shadow-[0_0_20px_rgba(0,183,235,0.5)]"
                 strokeWidth={1}
               />
             </div>
@@ -118,7 +118,7 @@ function OrderSuccessContent() {
             <button
               type="button"
               onClick={() => router.push('/orders')}
-              className="flex-1 h-14 bg-secondary text-white font-tech text-xs font-bold tracking-[0.15em] rounded-2xl shadow-lg shadow-secondary/20 hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-2"
+              className="flex-1 h-14 vault-btn-primary rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2"
             >
               <Truck size={18} />
               THEO DÕI ĐƠN HÀNG

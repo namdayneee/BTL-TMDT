@@ -171,7 +171,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-16 chrome-effect rounded-full font-tech text-xs text-secondary flex items-center justify-center space-x-3 group relative overflow-hidden active:scale-95 transition-transform"
+              className="w-full h-16 vault-btn-primary rounded-full flex items-center justify-center space-x-3 group relative overflow-hidden active:scale-95 transition-transform"
             >
               <span className="relative z-10 font-bold tracking-[0.2em]">
                 {isSubmitting ? 'ĐANG XỬ LÝ...' : 'ĐĂNG NHẬP'}
@@ -187,7 +187,7 @@ export default function Login() {
               <button
                 type="button"
                 onClick={() => router.push('/register')}
-                className="text-secondary font-bold underline underline-offset-4 cursor-pointer"
+                className="text-secondary font-bold underline underline-offset-4 cursor-pointer hover:text-accent-cyan transition-colors"
               >
                 ĐĂNG KÝ NGAY
               </button>
