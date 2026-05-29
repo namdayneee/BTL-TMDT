@@ -8,6 +8,7 @@ import orderRoutes from "./routes/order.routes.js";
 import cartRoutes from "./routes/cart.routes.js";
 import reviewRoutes from "./routes/review.routes.js";
 import sizingRoutes from "./routes/sizing.routes.js";
+import promotionRoutes from "./routes/promotion.routes.js";
 
 import { loggerMiddleware } from "./middleware/logger.middleware.js";
 import { createProxyMiddleware } from "http-proxy-middleware";
@@ -105,6 +106,8 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/reviews", reviewRoutes);
 
 app.use("/api/sizing", sizingRoutes);
+
+app.use("/api/promotions", promotionRoutes);
 
 export default app;
 

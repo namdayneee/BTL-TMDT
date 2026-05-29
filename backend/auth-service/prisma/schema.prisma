@@ -13,9 +13,23 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
+  id        Int          @id @default(autoincrement())
+  email     String       @unique
   password  String
-  role      String   @default("customer")
-  createdAt DateTime @default(now())
+  role      String       @default("customer")
+  createdAt DateTime     @default(now())
+  profile   UserProfile?
+}
+
+model UserProfile {
+  id            Int      @id @default(autoincrement())
+  userId        Int      @unique
+  fullName      String?
+  phone         String?
+  address       String?
+  height        Int?
+  weight        Int?
+  fitPreference String?
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id])
 }

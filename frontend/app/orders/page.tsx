@@ -24,6 +24,7 @@ import type { ApiOrder } from '../lib/types';
 type DisplayOrder = {
   id: string;
   orderId: number;
+  variantId?: number;
   date: string;
   status: string;
   statusKey: OrderStatus;
@@ -79,6 +80,7 @@ async function mapOrdersToDisplay(orders: ApiOrder[]): Promise<DisplayOrder[]> {
       return {
         id: `VT-${order.id}`,
         orderId: order.id,
+        variantId: firstItem?.variantId,
         date: formatOrderDate(order.createdAt),
         status: statusDisplay.label,
         statusKey: status,
@@ -277,20 +279,34 @@ export default function OrderList() {
                 </div>
               </div>
 
-              <div className="border-t border-outline-variant/20 pt-4 flex justify-between items-center">
+              <div className="border-t border-outline-variant/20 pt-4 flex justify-between items-center gap-3">
                 <p className="text-[10px] font-tech text-on-surface-variant uppercase tracking-widest opacity-60">
                   {o.eta || o.action}
                 </p>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    router.push(`/order/${o.orderId}`);
-                  }}
-                  className="chrome-effect px-6 py-2 rounded-xl font-tech text-[10px] font-bold text-on-surface uppercase tracking-widest active:scale-95 transition-all"
-                >
-                  Chi tiết
-                </button>
+                <div className="flex gap-2 shrink-0">
+                  {o.statusKey === 'delivered' && o.variantId && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/review?orderId=${o.orderId}&variantId=${o.variantId}`);
+                      }}
+                      className="border border-secondary text-secondary px-4 py-2 rounded-xl font-tech text-[10px] font-bold uppercase tracking-widest hover:bg-secondary/10 transition-all"
+                    >
+                      Đánh giá
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      router.push(`/order/${o.orderId}`);
+                    }}
+                    className="chrome-effect px-6 py-2 rounded-xl font-tech text-[10px] font-bold text-on-surface uppercase tracking-widest active:scale-95 transition-all"
+                  >
+                    Chi tiết
+                  </button>
+                </div>
               </div>
             </motion.div>
           ))}
