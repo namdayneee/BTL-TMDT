@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '../components/Header';
 import { Trash2, Minus, Plus, ArrowRight, ShoppingBag } from 'lucide-react';
@@ -11,6 +11,7 @@ import { formatVND } from '../lib/utils';
 export default function Cart() {
   const router = useRouter();
   const { items, loading, subtotal, updateQuantity, removeItem, refreshCart } = useCart();
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
     const token = getStoredToken();
@@ -18,13 +19,21 @@ export default function Cart() {
       router.push('/login?redirect=/cart');
       return;
     }
+    setAuthReady(true);
     void refreshCart();
   }, [router, refreshCart]);
 
   const total = subtotal;
 
-  if (!getStoredToken()) {
-    return null;
+  if (!authReady) {
+    return (
+      <div className="min-h-screen bg-background pb-40 lg:pb-16">
+        <Header title="GIỎ HÀNG" />
+        <main className="pt-24 px-5 md:px-8 lg:px-12 max-w-3xl mx-auto">
+          <p className="text-center font-tech text-sm text-on-surface-variant py-16">Đang tải...</p>
+        </main>
+      </div>
+    );
   }
 
   return (
