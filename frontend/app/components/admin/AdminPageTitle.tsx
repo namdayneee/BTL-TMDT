@@ -1,18 +1,25 @@
 import type { ReactNode } from 'react';
 
+/** Mô tả ngắn + nút hành động — tiêu đề trang nằm ở header shell. */
 export default function AdminPageTitle({
-  title,
+  subtitle,
   children,
 }: {
-  title: string;
+  subtitle?: string;
   children?: ReactNode;
 }) {
+  if (!subtitle && !children) return null;
+
   return (
-    <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
-      <h2 className="font-display text-5xl md:text-6xl text-on-surface uppercase tracking-tight leading-none">
-        {title}
-      </h2>
-      {children}
+    <div
+      className={`mb-6 flex flex-col gap-4 ${
+        children ? 'sm:flex-row sm:items-center sm:justify-between' : ''
+      }`}
+    >
+      {subtitle && (
+        <p className="font-body text-sm text-slate-500 max-w-2xl">{subtitle}</p>
+      )}
+      {children && <div className="flex shrink-0 justify-end">{children}</div>}
     </div>
   );
 }

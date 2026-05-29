@@ -16,6 +16,7 @@ import {
   formatOrderDate,
   getOrderStatusDisplay,
   normalizeOrderStatus,
+  type OrderStatus,
 } from '../lib/order-utils';
 import { formatVND } from '../lib/utils';
 import type { ApiOrder } from '../lib/types';
@@ -25,6 +26,7 @@ type DisplayOrder = {
   orderId: number;
   date: string;
   status: string;
+  statusKey: OrderStatus;
   statusBg: string;
   statusText: string;
   name: string;
@@ -35,7 +37,22 @@ type DisplayOrder = {
   action?: string;
 };
 
-const filters = ['TẤT CẢ', 'CHỜ XỬ LÝ', 'ĐANG GIAO', 'HOÀN THÀNH'];
+const filters = ['TẤT CẢ', 'CHỜ XỬ LÝ', 'ĐANG GIAO', 'HOÀN THÀNH', 'ĐÃ HỦY'] as const;
+type OrderFilter = (typeof filters)[number];
+
+const FILTER_BY_STATUS: Record<OrderFilter, OrderStatus[] | null> = {
+  'TẤT CẢ': null,
+  'CHỜ XỬ LÝ': ['pending', 'confirmed'],
+  'ĐANG GIAO': ['shipping'],
+  'HOÀN THÀNH': ['delivered'],
+  'ĐÃ HỦY': ['cancelled'],
+};
+
+function matchesFilter(statusKey: OrderStatus, filter: OrderFilter): boolean {
+  const allowed = FILTER_BY_STATUS[filter];
+  if (!allowed) return true;
+  return allowed.includes(statusKey);
+}
 
 async function mapOrdersToDisplay(orders: ApiOrder[]): Promise<DisplayOrder[]> {
   return Promise.all(
@@ -64,6 +81,7 @@ async function mapOrdersToDisplay(orders: ApiOrder[]): Promise<DisplayOrder[]> {
         orderId: order.id,
         date: formatOrderDate(order.createdAt),
         status: statusDisplay.label,
+        statusKey: status,
         statusBg: statusDisplay.statusBg,
         statusText: statusDisplay.statusText,
         name,
@@ -84,6 +102,15 @@ export default function OrderList() {
   const [rawOrders, setRawOrders] = useState<ApiOrder[]>([]);
   const [orders, setOrders] = useState<DisplayOrder[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<OrderFilter>('TẤT CẢ');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredOrders = orders.filter((o) => {
+    if (!matchesFilter(o.statusKey, activeFilter)) return false;
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return true;
+    return o.id.toLowerCase().includes(q) || String(o.orderId).includes(q);
+  });
 
   const refreshDisplay = useCallback(async (list: ApiOrder[]) => {
     setOrders(await mapOrdersToDisplay(list));
@@ -174,22 +201,33 @@ export default function OrderList() {
         <div className="flex flex-col md:flex-row md:items-center gap-4 mb-8">
           <div className="relative group flex-1 max-w-md">
             <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-secondary transition-all duration-300 py-4 px-12 outline-none font-tech text-sm font-medium text-on-surface placeholder:text-on-surface-variant/40"
               placeholder="Tìm kiếm mã đơn hàng..."
-              type="text"
+              type="search"
             />
             <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-secondary transition-colors" />
           </div>
 
           <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar shrink-0">
-            {filters.map((f, i) => (
-              <button
-                key={f}
-                className={`whitespace-nowrap px-5 py-2.5 rounded-full font-tech text-[10px] font-bold tracking-widest border transition-all ${i === 0 ? 'border-secondary bg-secondary text-white shadow-lg shadow-secondary/20' : 'border-outline-variant text-on-surface-variant hover:border-secondary'}`}
-              >
-                {f}
-              </button>
-            ))}
+            {filters.map((f) => {
+              const isActive = activeFilter === f;
+              return (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setActiveFilter(f)}
+                  className={`whitespace-nowrap px-5 py-2.5 rounded-full font-tech text-[10px] font-bold tracking-widest border transition-all ${
+                    isActive
+                      ? 'border-secondary bg-secondary text-white shadow-lg shadow-secondary/20'
+                      : 'border-outline-variant text-on-surface-variant hover:border-secondary'
+                  }`}
+                >
+                  {f}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -201,8 +239,14 @@ export default function OrderList() {
           <p className="font-tech text-sm text-on-surface-variant mb-8">Bạn chưa có đơn hàng nào.</p>
         )}
 
+        {!loadingOrders && orders.length > 0 && filteredOrders.length === 0 && (
+          <p className="font-tech text-sm text-on-surface-variant mb-8">
+            Không có đơn hàng phù hợp với bộ lọc &quot;{activeFilter}&quot;.
+          </p>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {orders.map((o) => (
+          {filteredOrders.map((o) => (
             <motion.div
               key={o.id}
               initial={{ opacity: 0, scale: 0.98 }}
@@ -237,7 +281,14 @@ export default function OrderList() {
                 <p className="text-[10px] font-tech text-on-surface-variant uppercase tracking-widest opacity-60">
                   {o.eta || o.action}
                 </p>
-                <button className="chrome-effect px-6 py-2 rounded-xl font-tech text-[10px] font-bold text-on-surface uppercase tracking-widest active:scale-95 transition-all">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    router.push(`/order/${o.orderId}`);
+                  }}
+                  className="chrome-effect px-6 py-2 rounded-xl font-tech text-[10px] font-bold text-on-surface uppercase tracking-widest active:scale-95 transition-all"
+                >
                   Chi tiết
                 </button>
               </div>

@@ -255,7 +255,7 @@ export default function Checkout() {
               <button
                 onClick={() => void handlePlaceOrder()}
                 disabled={placing || items.length === 0}
-                className="w-full h-14 bg-secondary text-white rounded-full flex items-center justify-center gap-3 shadow-xl shadow-secondary/20 active:scale-[0.98] transition-all holographic-sweep group font-tech text-xs font-bold uppercase tracking-[0.15em] disabled:opacity-50"
+                className="w-full h-14 vault-btn-primary rounded-full flex items-center justify-center gap-3 active:scale-[0.98] transition-all holographic-sweep group font-tech text-xs font-bold uppercase tracking-[0.15em] disabled:opacity-50"
               >
                 {placing ? 'ĐANG XỬ LÝ...' : `ĐẶT HÀNG · ${formatVND(total)}`}
                 <ArrowRight size={17} className="group-hover:translate-x-2 transition-transform" />
@@ -279,7 +279,7 @@ export default function Checkout() {
         <button
           onClick={() => void handlePlaceOrder()}
           disabled={placing || items.length === 0}
-          className="w-full h-14 bg-secondary text-white rounded-full flex items-center justify-center gap-3 shadow-xl shadow-secondary/20 active:scale-[0.98] transition-all group font-tech text-xs font-bold uppercase tracking-[0.15em] disabled:opacity-50"
+          className="w-full h-14 vault-btn-primary rounded-full flex items-center justify-center gap-3 active:scale-[0.98] transition-all group font-tech text-xs font-bold uppercase tracking-[0.15em] disabled:opacity-50"
         >
           {placing ? 'ĐANG XỬ LÝ...' : 'ĐẶT HÀNG NGAY'}
           <ArrowRight size={17} className="group-hover:translate-x-2 transition-transform" />

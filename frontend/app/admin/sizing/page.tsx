@@ -40,11 +40,11 @@ export default function AdminSizingPage() {
 
   return (
     <div className="space-y-6 max-w-xl">
-      <AdminPageTitle title="Sizing" />
+      <AdminPageTitle subtitle="Thêm quy tắc gợi ý size theo chiều cao và cân nặng." />
 
       <form
         onSubmit={(e) => void handleSubmit(e)}
-        className="glass-card rounded-3xl border border-outline-variant/20 p-6 md:p-8 space-y-5"
+        className="admin-card admin-card-static p-6 md:p-8 space-y-5"
       >
         <div className="grid grid-cols-2 gap-4">
           <NumField
@@ -82,28 +82,16 @@ export default function AdminSizingPage() {
           />
         </div>
 
-        {message && (
-          <p className="text-sm text-secondary font-body bg-secondary/10 rounded-xl px-3 py-2 border border-secondary/20">
-            {message}
-          </p>
-        )}
-        {error && (
-          <p className="text-sm text-tertiary font-body bg-tertiary-container rounded-xl px-3 py-2">
-            {error}
-          </p>
-        )}
+        {message && <div className="admin-alert-success font-body">{message}</div>}
+        {error && <div className="admin-alert-error font-body">{error}</div>}
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full py-3.5 rounded-full bg-secondary text-white font-tech text-[10px] font-bold uppercase tracking-widest disabled:opacity-50 shadow-lg shadow-secondary/20 active:scale-95 transition-transform"
-        >
+        <button type="submit" disabled={submitting} className="admin-btn-primary w-full justify-center disabled:opacity-50">
           {submitting ? 'Đang lưu...' : 'Tạo quy tắc'}
         </button>
       </form>
 
-      <div className="rounded-3xl bg-surface-container-low border border-outline-variant/20 p-5 font-body text-sm text-on-surface-variant space-y-1">
-        <p className="font-tech text-[10px] uppercase text-on-surface tracking-widest font-bold mb-2">
+      <div className="admin-card admin-card-static p-5 font-body text-sm text-slate-600 space-y-1">
+        <p className="font-tech text-[10px] uppercase text-secondary tracking-widest font-bold mb-2">
           Ví dụ
         </p>
         <p>150–165 cm, 45–60 kg → size M</p>

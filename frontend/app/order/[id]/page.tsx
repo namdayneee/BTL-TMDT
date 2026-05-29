@@ -148,7 +148,7 @@ export default function OrderDetail() {
 
             {/* Actions */}
             <div className="flex flex-col gap-3">
-              <button className="w-full bg-secondary text-white h-14 rounded-2xl font-tech text-xs font-bold uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:opacity-95 shadow-xl shadow-secondary/10 transition-all active:scale-95">
+              <button className="w-full vault-btn-primary h-14 rounded-2xl font-tech text-xs font-bold uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all active:scale-95">
                 <MessageCircle size={18} />
                 Liên hệ hỗ trợ
               </button>

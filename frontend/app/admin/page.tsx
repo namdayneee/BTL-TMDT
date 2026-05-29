@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { DollarSign, Package, ShoppingCart, AlertTriangle, ArrowRight } from 'lucide-react';
-import AdminPageTitle from '../components/admin/AdminPageTitle';
+import { DollarSign, Package, ShoppingCart, AlertTriangle } from 'lucide-react';
+import AdminStatCard from '../components/admin/AdminStatCard';
+import AdminQuickLink from '../components/admin/AdminQuickLink';
 import { fetchAdminStats, type AdminStats } from '../lib/admin-api';
 import { formatVND } from '../lib/utils';
 
@@ -19,108 +19,81 @@ export default function AdminDashboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const cards = stats
-    ? [
-        {
-          label: 'Doanh thu',
-          value: formatVND(stats.totalRevenue),
-          icon: DollarSign,
-          href: '/admin/orders',
-        },
-        {
-          label: 'Tổng đơn hàng',
-          value: String(stats.totalOrders),
-          icon: ShoppingCart,
-          href: '/admin/orders',
-        },
-        {
-          label: 'Sản phẩm sắp hết',
-          value: String(stats.lowStockProducts),
-          icon: AlertTriangle,
-          href: '/admin/products',
-        },
-      ]
-    : [];
-
   return (
     <div className="space-y-8">
-      <AdminPageTitle title="Tổng quan" />
+      <div className="relative overflow-hidden rounded-3xl bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 p-6 md:p-8 text-white shadow-xl">
+        <div className="absolute top-0 right-0 w-56 h-56 bg-secondary/25 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 w-40 h-40 bg-accent-cyan/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative">
+          <p className="font-tech text-[10px] text-secondary uppercase tracking-[0.3em] font-bold mb-2">
+            Hôm nay
+          </p>
+          <h3 className="font-display text-3xl md:text-4xl uppercase tracking-tight">
+            Bảng điều khiển Vault
+          </h3>
+          <p className="font-body text-sm text-slate-300 mt-2 max-w-md">
+            Theo dõi doanh thu, đơn hàng và tồn kho — mọi thứ trong một nơi.
+          </p>
+        </div>
+      </div>
 
       {loading && (
-        <p className="font-tech text-sm text-on-surface-variant">Đang tải dữ liệu...</p>
-      )}
-
-      {error && (
-        <div className="rounded-2xl bg-tertiary-container border border-tertiary/20 px-4 py-3 text-sm text-tertiary font-body">
-          {error}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="admin-card admin-card-static h-36 animate-pulse bg-slate-100"
+            />
+          ))}
         </div>
       )}
+
+      {error && <div className="admin-alert-error font-body">{error}</div>}
 
       {!loading && !error && stats && (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
-            {cards.map((card) => {
-              const Icon = card.icon;
-              return (
-                <Link
-                  key={card.label}
-                  href={card.href}
-                  className="glass-card rounded-3xl border border-outline-variant/20 p-6 hover:shadow-xl transition-shadow group"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="w-11 h-11 rounded-2xl bg-secondary/10 flex items-center justify-center text-secondary">
-                      <Icon size={22} />
-                    </div>
-                    <ArrowRight
-                      size={16}
-                      className="text-outline-variant group-hover:text-secondary transition-colors"
-                    />
-                  </div>
-                  <p className="font-tech text-[10px] text-on-surface-variant uppercase tracking-widest mt-5">
-                    {card.label}
-                  </p>
-                  <p className="font-display text-4xl text-on-surface mt-1">{card.value}</p>
-                </Link>
-              );
-            })}
+            <AdminStatCard
+              label="Doanh thu"
+              value={formatVND(stats.totalRevenue)}
+              icon={DollarSign}
+              href="/admin/orders"
+              accent="cyan"
+            />
+            <AdminStatCard
+              label="Tổng đơn hàng"
+              value={String(stats.totalOrders)}
+              icon={ShoppingCart}
+              href="/admin/orders"
+              accent="slate"
+            />
+            <AdminStatCard
+              label="Sản phẩm sắp hết"
+              value={String(stats.lowStockProducts)}
+              icon={AlertTriangle}
+              href="/admin/products"
+              accent="amber"
+            />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-            <Link
-              href="/admin/orders"
-              className="glass-card rounded-3xl border border-outline-variant/20 p-6 flex items-center justify-between hover:border-secondary/40 transition-colors group"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center text-white">
-                  <ShoppingCart size={24} />
-                </div>
-                <p className="font-tech text-sm font-bold text-on-surface uppercase tracking-wider">
-                  Quản lý đơn hàng
-                </p>
-              </div>
-              <ArrowRight
-                size={18}
-                className="text-outline-variant group-hover:text-secondary transition-colors"
+          <div>
+            <p className="font-tech text-[10px] text-slate-500 uppercase tracking-widest mb-4">
+              Truy cập nhanh
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              <AdminQuickLink
+                href="/admin/orders"
+                label="Quản lý đơn hàng"
+                description="Xem, cập nhật trạng thái giao hàng"
+                icon={ShoppingCart}
               />
-            </Link>
-
-            <Link
-              href="/admin/products"
-              className="glass-card rounded-3xl border border-outline-variant/20 p-6 flex items-center justify-between hover:border-secondary/40 transition-colors group"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center text-white">
-                  <Package size={24} />
-                </div>
-                <p className="font-tech text-sm font-bold text-on-surface uppercase tracking-wider">
-                  Quản lý sản phẩm
-                </p>
-              </div>
-              <ArrowRight
-                size={18}
-                className="text-outline-variant group-hover:text-secondary transition-colors"
+              <AdminQuickLink
+                href="/admin/products"
+                label="Quản lý sản phẩm"
+                description="Thêm, sửa sản phẩm và tồn kho"
+                icon={Package}
               />
-            </Link>
+            </div>
           </div>
         </>
       )}

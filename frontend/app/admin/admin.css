@@ -1,0 +1,88 @@
+/* Admin panel — shared visuals */
+.admin-main-bg {
+  background-color: #f4f6f8;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 100% -20%, rgba(0, 183, 235, 0.08), transparent),
+    radial-gradient(ellipse 60% 40% at 0% 100%, rgba(255, 200, 0, 0.06), transparent);
+}
+
+.admin-card {
+  background: #ffffff;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 1.25rem;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 4px 16px rgba(15, 23, 42, 0.04);
+  transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+}
+
+.admin-card:hover {
+  box-shadow:
+    0 4px 8px rgba(15, 23, 42, 0.06),
+    0 12px 32px rgba(0, 183, 235, 0.08);
+  border-color: rgba(0, 183, 235, 0.2);
+}
+
+.admin-card-static:hover {
+  transform: none;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 4px 16px rgba(15, 23, 42, 0.04);
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+.admin-table-wrap {
+  overflow: hidden;
+}
+
+.admin-table-wrap thead tr {
+  background: linear-gradient(90deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.admin-table-wrap tbody tr:hover {
+  background: rgba(0, 183, 235, 0.04);
+}
+
+.admin-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 9999px;
+  font-family: var(--font-tech);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #fff;
+  background: linear-gradient(135deg, #0099c7 0%, #00b7eb 50%, #33ccff 100%);
+  box-shadow: 0 4px 16px rgba(0, 183, 235, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-btn-primary:hover {
+  transform: scale(1.02);
+  box-shadow: 0 6px 24px rgba(0, 183, 235, 0.45);
+}
+
+.admin-btn-primary:active {
+  transform: scale(0.98);
+}
+
+.admin-alert-error {
+  border-radius: 1rem;
+  padding: 0.875rem 1rem;
+  font-size: 0.875rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+.admin-alert-success {
+  border-radius: 1rem;
+  padding: 0.875rem 1rem;
+  font-size: 0.875rem;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #047857;
+}

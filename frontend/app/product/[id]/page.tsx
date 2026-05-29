@@ -162,7 +162,7 @@ export default function ProductDetail() {
         <button
           onClick={() => void handleBuyNow()}
           disabled={outOfStock || adding || buying}
-          className="flex-1 h-14 bg-secondary text-white rounded-full flex items-center justify-center gap-2 shadow-lg shadow-secondary/25 font-tech text-xs font-bold uppercase tracking-[0.15em] active:scale-[0.98] transition-all holographic-sweep disabled:opacity-50"
+          className="flex-1 h-14 vault-btn-primary rounded-full flex items-center justify-center gap-2 font-tech text-xs font-bold uppercase tracking-[0.15em] active:scale-[0.98] transition-all holographic-sweep disabled:opacity-50"
         >
           <Zap size={18} />
           {buying ? 'ĐANG XỬ LÝ...' : 'MUA NGAY'}

@@ -44,7 +44,7 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6 mb-6">
           <div className="flex flex-col items-center md:items-start text-center md:text-left">
             <h2
-              className="font-display text-3xl md:text-4xl tracking-[0.25em] mb-2 cursor-pointer hover:opacity-80 transition-opacity"
+              className="font-display text-3xl md:text-4xl tracking-[0.25em] mb-2 cursor-pointer hover:opacity-80 transition-opacity bg-linear-to-r from-accent-pink via-accent-yellow to-accent-cyan bg-clip-text text-transparent"
               onClick={() => router.push('/')}
             >
               VAULT
@@ -57,7 +57,7 @@ export default function Footer() {
                 <button
                   key={label}
                   aria-label={label}
-                  className="w-8 h-8 rounded-full border border-white/15 flex items-center justify-center text-white/50 hover:text-white hover:border-secondary transition-all"
+                  className="w-8 h-8 rounded-full border border-white/15 flex items-center justify-center text-white/50 hover:text-accent-yellow hover:border-accent-yellow hover:shadow-[0_0_12px_rgba(255,200,0,0.4)] transition-all"
                 >
                   <Icon size={14} />
                 </button>
@@ -93,12 +93,12 @@ export default function Footer() {
             </h4>
             <div className="relative">
               <input
-                className="w-full bg-white/5 border-b border-white/20 py-2.5 px-0 font-tech text-[10px] text-white focus:outline-none focus:border-secondary transition-colors placeholder:text-white/20"
+                className="w-full bg-white/5 border-b border-white/20 py-2.5 px-0 font-tech text-[10px] text-white focus:outline-none focus:border-accent-cyan transition-colors placeholder:text-white/20"
                 placeholder="NHẬP EMAIL"
                 type="email"
               />
               <button
-                className="absolute right-0 bottom-2 text-secondary hover:opacity-80 transition-opacity"
+                className="absolute right-0 bottom-2 text-accent-cyan hover:text-accent-yellow transition-colors"
                 aria-label="Đăng ký nhận tin"
               >
                 <ArrowRight size={14} />
