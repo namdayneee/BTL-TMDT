@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Menu, ShoppingBag, ArrowLeft, User, X } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
-import { clearToken, fetchCurrentUser, getStoredToken } from '../lib/auth-client';
+import { clearToken, fetchCurrentUser, getStoredToken, isAdminRole } from '../lib/auth-client';
 import { useCart } from '../context/CartContext';
 
 interface HeaderProps {
@@ -11,7 +11,7 @@ interface HeaderProps {
   showBack?: boolean;
 }
 
-const navLinks = [
+const baseNavLinks = [
   { label: 'Trang chủ', path: '/' },
   { label: 'Sản phẩm', path: '/product' },
   { label: 'Đơn hàng', path: '/orders' },
@@ -24,6 +24,7 @@ export default function Header({ title, showBack }: HeaderProps) {
   const { itemCount, refreshCart } = useCart();
   const [showAuthSelect, setShowAuthSelect] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [isOpen, setIsOpen] = useState(false); // State quản lý trạng thái đóng/mở menu mobile
 
   useEffect(() => {
@@ -31,21 +32,28 @@ export default function Header({ title, showBack }: HeaderProps) {
       const token = getStoredToken();
       if (!token) {
         setIsAuthenticated(false);
+        setIsAdmin(false);
         return;
       }
 
       try {
-        await fetchCurrentUser(token);
+        const user = await fetchCurrentUser(token);
         setIsAuthenticated(true);
+        setIsAdmin(isAdminRole(user.role));
         await refreshCart();
       } catch {
         clearToken();
         setIsAuthenticated(false);
+        setIsAdmin(false);
       }
     };
 
     void validateAuth();
   }, [pathname, refreshCart]);
+
+  const navLinks = isAdmin
+    ? [...baseNavLinks, { label: 'Admin', path: '/admin' }]
+    : baseNavLinks;
 
   const handleAuthAction = (action: 'login' | 'logout') => {
     if (action === 'login') {
@@ -53,6 +61,7 @@ export default function Header({ title, showBack }: HeaderProps) {
     } else {
       clearToken();
       setIsAuthenticated(false);
+      setIsAdmin(false);
       void refreshCart();
       router.push('/');
     }

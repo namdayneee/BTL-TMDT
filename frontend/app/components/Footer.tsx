@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Globe, Wifi, Hexagon, ArrowRight } from 'lucide-react';
 
 const footerCols = [
@@ -32,6 +32,11 @@ const socialIcons = [
 
 export default function Footer() {
   const router = useRouter();
+  const pathname = usePathname();
+
+  if (pathname?.startsWith('/admin')) {
+    return null;
+  }
 
   return (
     <footer className="bg-on-surface text-white pt-8 pb-5 px-5 md:px-8 lg:px-12">

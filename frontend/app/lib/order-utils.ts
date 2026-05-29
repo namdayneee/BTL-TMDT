@@ -1,7 +1,9 @@
 import type { ApiOrder } from './types';
 
+export type OrderStatus = ApiOrder['status'];
+
 const STATUS_MAP: Record<
-  ApiOrder['status'],
+  OrderStatus,
   { label: string; statusBg: string; statusText: string }
 > = {
   pending: {
@@ -10,9 +12,9 @@ const STATUS_MAP: Record<
     statusText: 'text-tertiary',
   },
   confirmed: {
-    label: 'CHỜ XỬ LÝ',
-    statusBg: 'bg-tertiary-container',
-    statusText: 'text-tertiary',
+    label: 'ĐÃ XÁC NHẬN',
+    statusBg: 'bg-secondary/15',
+    statusText: 'text-secondary',
   },
   shipping: {
     label: 'ĐANG GIAO',
@@ -21,18 +23,25 @@ const STATUS_MAP: Record<
   },
   delivered: {
     label: 'ĐÃ GIAO',
-    statusBg: 'bg-surface-container-highest',
-    statusText: 'text-on-surface',
+    statusBg: 'bg-emerald-100',
+    statusText: 'text-emerald-800',
   },
   cancelled: {
     label: 'ĐÃ HỦY',
-    statusBg: 'bg-outline-variant',
+    statusBg: 'bg-surface-container-highest',
     statusText: 'text-on-surface-variant',
   },
 };
 
-export function getOrderStatusDisplay(status: ApiOrder['status']) {
-  return STATUS_MAP[status] ?? STATUS_MAP.pending;
+/** Chuẩn hóa status từ API (phòng trường hợp khác chữ hoa). */
+export function normalizeOrderStatus(status: string): OrderStatus {
+  const key = status?.toLowerCase() as OrderStatus;
+  if (key in STATUS_MAP) return key;
+  return 'pending';
+}
+
+export function getOrderStatusDisplay(status: string) {
+  return STATUS_MAP[normalizeOrderStatus(status)];
 }
 
 export function formatOrderDate(dateStr: string): string {
