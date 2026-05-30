@@ -21,6 +21,16 @@ import {
   subscribeOrderStatusUpdates,
 } from '../lib/order-socket';
 import { getOrderStatusDisplay } from '../lib/order-utils';
+import {
+  computeVaultPoints,
+  computeXpFromOrders,
+  formatXp,
+  getTierProgress,
+  isDropNotifySubscribed,
+  subscribeDropNotify,
+  TIERS,
+} from '../lib/loyalty';
+import DropCountdown from '../components/DropCountdown';
 import type { ApiOrder } from '../lib/types';
 
 type OrderPreview = {
@@ -71,10 +81,15 @@ export default function Profile() {
   const router = useRouter();
   const [authState, setAuthState] = useState<'checking' | 'authenticated' | 'unauthenticated'>('checking');
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [latestOrder, setLatestOrder] = useState<OrderPreview | null>(null);
+  const [orderPreviews, setOrderPreviews] = useState<OrderPreview[]>([]);
+  const [loyaltyXp, setLoyaltyXp] = useState(0);
+  const [vaultPoints, setVaultPoints] = useState(0);
+  const [dropSubscribed, setDropSubscribed] = useState(false);
   const { profile, setProfileLocal, updateProfile } = useProfile();
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
+
+  const tierProgress = getTierProgress(loyaltyXp);
 
   useEffect(() => {
     const validateAccess = async () => {
@@ -92,11 +107,18 @@ export default function Profile() {
 
         try {
           const orders = await fetchMyOrders();
-          const preview = await buildOrderPreview(orders[0]);
-          setLatestOrder(preview);
+          setLoyaltyXp(computeXpFromOrders(orders));
+          setVaultPoints(computeVaultPoints(orders));
+          const previews = await Promise.all(
+            orders.slice(0, 3).map((o) => buildOrderPreview(o))
+          );
+          setOrderPreviews(previews.filter((p): p is OrderPreview => p !== null));
         } catch {
-          setLatestOrder(null);
+          setOrderPreviews([]);
+          setLoyaltyXp(0);
+          setVaultPoints(0);
         }
+        setDropSubscribed(isDropNotifySubscribed(currentUser.id));
       } catch {
         clearToken();
         setAuthState('unauthenticated');
@@ -111,18 +133,22 @@ export default function Profile() {
 
     joinUserOrdersRoom(user.id);
 
-    const syncLatestOrder = async () => {
+    const syncOrders = async () => {
       try {
         const orders = await fetchMyOrders();
-        const preview = await buildOrderPreview(orders[0]);
-        setLatestOrder(preview);
+        setLoyaltyXp(computeXpFromOrders(orders));
+        setVaultPoints(computeVaultPoints(orders));
+        const previews = await Promise.all(
+          orders.slice(0, 3).map((o) => buildOrderPreview(o))
+        );
+        setOrderPreviews(previews.filter((p): p is OrderPreview => p !== null));
       } catch {
-        setLatestOrder(null);
+        setOrderPreviews([]);
       }
     };
 
     return subscribeOrderStatusUpdates(() => {
-      void syncLatestOrder();
+      void syncOrders();
     });
   }, [user]);
 
@@ -171,7 +197,11 @@ export default function Profile() {
             {user ? displayNameFromProfile(user.email, profile.fullName) : '—'}
           </h1>
           <div className="mt-4 text-secondary bg-secondary/10 px-4 py-1.5 rounded-full border border-secondary/20 font-tech text-[10px] font-bold uppercase tracking-widest">
-            {user ? roleBadgeLabel(user.role) : 'THÀNH VIÊN HẠNG BLACK'}
+            {user && !isAdminRole(user.role)
+              ? `THÀNH VIÊN HẠNG ${tierProgress.currentTier}`
+              : user
+                ? roleBadgeLabel(user.role)
+                : 'THÀNH VIÊN'}
           </div>
           {user && isAdminRole(user.role) && (
             <button
@@ -197,9 +227,18 @@ export default function Profile() {
               </div>
               <div className="relative z-10">
                 <p className="font-tech text-[10px] text-secondary uppercase mb-2 tracking-[0.3em] font-bold">Truy Cập Độc Quyền</p>
-                <h3 className="font-tech text-lg font-bold mb-6 tracking-tight text-on-surface">MỞ BÁN SS.24 SAU 02:14:55</h3>
-                <button className="w-full py-4 vault-btn-primary font-tech text-[10px] font-bold uppercase tracking-[0.3em] active:scale-95 transition-all rounded-xl">
-                  Thông Báo Cho Tôi
+                <DropCountdown />
+                <button
+                  type="button"
+                  disabled={dropSubscribed}
+                  onClick={() => {
+                    if (!user) return;
+                    subscribeDropNotify(user.id);
+                    setDropSubscribed(true);
+                  }}
+                  className="w-full py-4 vault-btn-primary font-tech text-[10px] font-bold uppercase tracking-[0.3em] active:scale-95 transition-all rounded-xl disabled:opacity-60"
+                >
+                  {dropSubscribed ? 'ĐÃ ĐĂNG KÝ THÔNG BÁO' : 'Thông Báo Cho Tôi'}
                 </button>
               </div>
             </section>
@@ -208,22 +247,61 @@ export default function Profile() {
             <section className="space-y-4">
               <div className="flex justify-between items-end px-2">
                 <h2 className="font-tech text-[10px] font-bold uppercase tracking-widest opacity-60">Tiến Trình Thứ Hạng</h2>
-                <span className="font-tech text-[10px] font-bold text-secondary uppercase tracking-widest">MỞ KHOÁ ELITE TẠI 5000 XP</span>
+                <span className="font-tech text-[10px] font-bold text-secondary uppercase tracking-widest">
+                  {tierProgress.nextTier
+                    ? `MỞ KHOÁ ${tierProgress.nextTier} TẠI ${formatXp(
+                        tierProgress.nextTier === 'ELITE'
+                          ? tierProgress.eliteTargetXp
+                          : tierProgress.xp + tierProgress.xpToNext
+                      )} XP`
+                    : 'ĐÃ ĐẠT HẠNG ELITE'}
+                </span>
               </div>
               <div className="glass-card rounded-3xl p-8 shadow-sm border border-outline-variant/10">
                 <div className="flex justify-between mb-10">
-                  {['CORE', 'SILVER', 'BLACK', 'ELITE'].map((tier, i) => (
-                    <div key={tier} className={`flex flex-col items-center ${i > 2 ? 'opacity-30' : i === 2 ? '' : 'opacity-50'}`}>
-                      <span className={`font-tech text-[9px] mb-2 tracking-widest font-bold ${i === 2 ? 'text-secondary' : ''}`}>{tier}</span>
-                      <div className={`w-2.5 h-2.5 rounded-full ${i <= 2 ? (i === 2 ? 'bg-secondary ring-4 ring-secondary/20' : 'bg-on-surface') : 'bg-outline-variant'}`}></div>
-                    </div>
-                  ))}
+                  {TIERS.map((tier, i) => {
+                    const reached = i <= tierProgress.currentTierIndex;
+                    const current = i === tierProgress.currentTierIndex;
+                    return (
+                      <div
+                        key={tier}
+                        className={`flex flex-col items-center ${reached ? '' : 'opacity-30'}`}
+                      >
+                        <span
+                          className={`font-tech text-[9px] mb-2 tracking-widest font-bold ${
+                            current ? 'text-secondary' : reached ? 'text-on-surface' : ''
+                          }`}
+                        >
+                          {tier}
+                        </span>
+                        <div
+                          className={`w-2.5 h-2.5 rounded-full ${
+                            current
+                              ? 'bg-secondary ring-4 ring-secondary/20'
+                              : reached
+                                ? 'bg-on-surface'
+                                : 'bg-outline-variant'
+                          }`}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
                 <div className="relative w-full h-1 bg-on-surface/5 rounded-full overflow-hidden">
-                  <div className="absolute top-0 left-0 h-full w-2/3 bg-secondary"></div>
+                  <div
+                    className="absolute top-0 left-0 h-full bg-secondary transition-all duration-500"
+                    style={{ width: `${tierProgress.progressPercent}%` }}
+                  />
                 </div>
                 <p className="mt-5 font-body text-xs text-on-surface-variant text-center italic opacity-70">
-                  &quot;Chỉ còn 1,250 XP để đạt hạng ELITE.&quot;
+                  {tierProgress.nextTier ? (
+                    <>
+                      Chỉ còn <span className="font-bold text-secondary">{formatXp(tierProgress.xpToNext)} XP</span> để
+                      đạt hạng {tierProgress.nextTier}. Hiện có {formatXp(tierProgress.xp)} XP.
+                    </>
+                  ) : (
+                    <>Bạn đã đạt hạng ELITE với {formatXp(tierProgress.xp)} XP.</>
+                  )}
                 </p>
               </div>
             </section>
@@ -376,13 +454,25 @@ export default function Profile() {
                 <div className="relative z-10 flex flex-col items-center">
                   <span className="font-tech text-[10px] text-on-surface-variant uppercase tracking-widest mb-3 font-bold opacity-60">TỔNG ĐIỂM HIỆN CÓ</span>
                   <div className="flex items-baseline gap-2">
-                    <span className="font-display text-7xl chrome-effect tracking-tighter">2,500</span>
+                    <span className="font-display text-7xl chrome-effect tracking-tighter">
+                      {formatXp(vaultPoints)}
+                    </span>
                     <span className="font-display text-2xl text-secondary">VP</span>
                   </div>
                   <p className="mt-5 font-body text-[11px] text-on-surface-variant text-center max-w-50 leading-relaxed opacity-70">
-                    Đổi điểm lấy các sản phẩm lưu trữ và phụ kiện độc quyền.
+                    1 VP = 10.000đ đơn đã giao. Đổi điểm lấy phụ kiện độc quyền (sắp ra mắt).
                   </p>
-                  <button className="mt-8 px-10 py-4 rounded-full vault-btn-primary font-tech text-[10px] font-bold uppercase tracking-widest transition-all active:scale-95">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (vaultPoints < 100) {
+                        alert('Bạn cần tối thiểu 100 VP để đổi quà. Hãy mua sắm và nhận hàng để tích điểm.');
+                        return;
+                      }
+                      router.push('/product');
+                    }}
+                    className="mt-8 px-10 py-4 rounded-full vault-btn-primary font-tech text-[10px] font-bold uppercase tracking-widest transition-all active:scale-95"
+                  >
                     Đổi Ngay
                   </button>
                 </div>
@@ -401,33 +491,36 @@ export default function Profile() {
                 </button>
               </div>
               <div className="space-y-3">
-                {latestOrder ? (
-                  <button
-                    type="button"
-                    onClick={() => router.push(`/order/${latestOrder.id.replace('VT-', '')}`)}
-                    className="w-full bg-surface-container-low/50 p-4 rounded-2xl flex justify-between items-center border border-outline-variant/10 hover:border-secondary/30 transition-colors text-left"
-                  >
-                    <div className="flex gap-4 items-center">
-                      <div className="w-12 h-14 bg-surface-container rounded-xl overflow-hidden">
-                        <img
-                          className="w-full h-full object-cover"
-                          src={latestOrder.img}
-                          alt={latestOrder.name}
-                        />
-                      </div>
-                      <div>
-                        <p className="font-tech text-[10px] font-bold uppercase">{latestOrder.name}</p>
-                        <p className="font-tech text-[9px] text-on-surface-variant opacity-60">
-                          #{latestOrder.id}
-                        </p>
-                      </div>
-                    </div>
-                    <span
-                      className={`text-[8px] font-bold tracking-widest px-2.5 py-1 rounded-full uppercase ${latestOrder.statusBg} ${latestOrder.statusText}`}
+                {orderPreviews.length > 0 ? (
+                  orderPreviews.map((order) => (
+                    <button
+                      key={order.id}
+                      type="button"
+                      onClick={() => router.push(`/order/${order.id.replace('VT-', '')}`)}
+                      className="w-full bg-surface-container-low/50 p-4 rounded-2xl flex justify-between items-center border border-outline-variant/10 hover:border-secondary/30 transition-colors text-left"
                     >
-                      {latestOrder.statusLabel}
-                    </span>
-                  </button>
+                      <div className="flex gap-4 items-center">
+                        <div className="w-12 h-14 bg-surface-container rounded-xl overflow-hidden">
+                          <img
+                            className="w-full h-full object-cover"
+                            src={order.img}
+                            alt={order.name}
+                          />
+                        </div>
+                        <div>
+                          <p className="font-tech text-[10px] font-bold uppercase">{order.name}</p>
+                          <p className="font-tech text-[9px] text-on-surface-variant opacity-60">
+                            #{order.id}
+                          </p>
+                        </div>
+                      </div>
+                      <span
+                        className={`text-[8px] font-bold tracking-widest px-2.5 py-1 rounded-full uppercase ${order.statusBg} ${order.statusText}`}
+                      >
+                        {order.statusLabel}
+                      </span>
+                    </button>
+                  ))
                 ) : (
                   <p className="font-body text-sm text-on-surface-variant text-center py-6 opacity-70">
                     Chưa có đơn hàng nào.

@@ -41,8 +41,19 @@ export const validatePromo = async (code, subtotal) => {
   return { promo, discountAmount };
 };
 
-export const checkout = async (userId, body = {}) => {
-  const { shippingName, shippingPhone, shippingAddress, paymentMethod, promoCode } = body;
+const resolveCheckoutItems = async (userId, body) => {
+  const buyNow = body.buyNow;
+  if (buyNow?.variantId != null) {
+    const variantId = Number(buyNow.variantId);
+    const quantity = Math.max(1, Number(buyNow.quantity) || 1);
+    if (!Number.isFinite(variantId) || variantId <= 0) {
+      throw new Error("Sản phẩm không hợp lệ");
+    }
+    return {
+      checkoutItems: [{ variantId, quantity }],
+      clearFullCart: false,
+    };
+  }
 
   const cart = await prisma.cart.findUnique({
     where: { userId },
@@ -53,11 +64,27 @@ export const checkout = async (userId, body = {}) => {
     throw new Error("Giỏ hàng trống");
   }
 
+  return {
+    cart,
+    checkoutItems: cart.items.map((item) => ({
+      variantId: item.variantId,
+      quantity: item.quantity,
+    })),
+    clearFullCart: true,
+  };
+};
+
+export const checkout = async (userId, body = {}) => {
+  const { shippingName, shippingPhone, shippingAddress, paymentMethod, promoCode } = body;
+
+  const resolved = await resolveCheckoutItems(userId, body);
+  const { checkoutItems, clearFullCart, cart } = resolved;
+
   let subtotal = 0;
   const orderItemsData = [];
-  const stockItems = toStockItems(cart.items);
+  const stockItems = toStockItems(checkoutItems);
 
-  for (const item of cart.items) {
+  for (const item of checkoutItems) {
     const response = await productClient.get(`/products/variants/${item.variantId}`);
     const variant = response.data;
 
@@ -109,7 +136,9 @@ export const checkout = async (userId, body = {}) => {
       include: { items: true },
     });
 
-    await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
+    if (clearFullCart && cart) {
+      await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
+    }
 
     return order;
   } catch (error) {
