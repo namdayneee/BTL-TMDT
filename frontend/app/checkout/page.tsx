@@ -10,8 +10,8 @@ import {
 import { useCart } from '../context/CartContext';
 import { checkoutOrder } from '../lib/order-api';
 import { validatePromoCode } from '../lib/promotion-api';
-import { fetchMyProfile } from '../lib/profile-api';
 import { getStoredToken } from '../lib/auth-client';
+import { useProfile } from '../context/ProfileContext';
 import { formatVND } from '../lib/utils';
 import AddressSelector, { type AddressSelection } from '../components/AddressSelector';
 
@@ -44,6 +44,7 @@ const paymentMethods: PaymentMethodOption[] = [
 export default function Checkout() {
   const router = useRouter();
   const { items, subtotal, refreshCart } = useCart();
+  const { profile, updateProfile, loading: profileLoading } = useProfile();
   const [selectedPayment, setSelectedPayment] = useState('cod');
   const [promoCode, setPromoCode] = useState('');
   const [promoResult, setPromoResult] = useState<{ discountAmount: number; message: string } | null>(null);
@@ -64,27 +65,36 @@ export default function Checkout() {
     fullAddress: '',
   });
   const [addressError, setAddressError] = useState('');
-
   useEffect(() => {
     const token = getStoredToken();
     if (!token) {
       router.push('/login?redirect=/checkout');
       return;
     }
-    // Load profile để điền sẵn
-    void fetchMyProfile().then((p) => {
-      if (p.fullName) setShippingName(p.fullName);
-      if (p.phone) setShippingPhone(p.phone);
-      if (p.address) {
-        setAddressSelection((prev) => ({
-          ...prev,
-          street: p.address ?? '',
-          fullAddress: p.address ?? '',
-        }));
-      }
-    }).catch(() => {});
     void refreshCart().finally(() => setCartChecked(true));
   }, [router, refreshCart]);
+
+  useEffect(() => {
+    if (profileLoading) return;
+    setShippingName(profile.fullName ?? '');
+    setShippingPhone(profile.phone ?? '');
+    if (profile.address) {
+      setAddressSelection((prev) => ({
+        ...prev,
+        street: profile.address ?? prev.street,
+        fullAddress: profile.address ?? prev.fullAddress,
+      }));
+    }
+  }, [profile.fullName, profile.phone, profile.address, profileLoading]);
+
+  const persistContactInfo = async () => {
+    const fullAddress = addressSelection.fullAddress.trim();
+    await updateProfile({
+      fullName: shippingName.trim(),
+      phone: shippingPhone.trim(),
+      address: fullAddress || profile.address || undefined,
+    });
+  };
 
   useEffect(() => {
     if (!cartChecked || placing) return;
@@ -137,6 +147,7 @@ export default function Checkout() {
     if (!validateAddress()) return;
     setPlacing(true);
     try {
+      await persistContactInfo();
       const order = await checkoutOrder({
         shippingName: shippingName.trim(),
         shippingPhone: shippingPhone.trim(),
@@ -197,6 +208,11 @@ export default function Checkout() {
                     <input
                       value={shippingName}
                       onChange={(e) => setShippingName(e.target.value)}
+                      onBlur={() => {
+                        if (shippingName.trim() || shippingPhone.trim()) {
+                          void persistContactInfo().catch(() => {});
+                        }
+                      }}
                       placeholder="Nguyễn Văn A"
                       className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-3 font-body text-sm outline-none focus:border-secondary transition-all"
                     />
@@ -206,6 +222,11 @@ export default function Checkout() {
                     <input
                       value={shippingPhone}
                       onChange={(e) => setShippingPhone(e.target.value)}
+                      onBlur={() => {
+                        if (shippingName.trim() || shippingPhone.trim()) {
+                          void persistContactInfo().catch(() => {});
+                        }
+                      }}
                       placeholder="0901 234 567"
                       className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-3 font-body text-sm outline-none focus:border-secondary transition-all"
                     />

@@ -286,7 +286,7 @@ export default function AdminProductsPage() {
 
   return (
     <div className="space-y-6">
-      <AdminPageTitle subtitle="Danh sách sản phẩm, biến thể size và tồn kho.">
+      <AdminPageTitle subtitle="Thêm và sửa thông tin sản phẩm. Quản lý tồn kho theo size tại mục Tồn kho.">
         <button
           type="button"
           onClick={() => {

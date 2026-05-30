@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { DollarSign, Package, ShoppingCart, AlertTriangle } from 'lucide-react';
+import { DollarSign, Package, ShoppingCart, AlertTriangle, Warehouse, Users, Ticket } from 'lucide-react';
 import AdminStatCard from '../components/admin/AdminStatCard';
 import AdminQuickLink from '../components/admin/AdminQuickLink';
 import { fetchAdminStats, type AdminStats } from '../lib/admin-api';
@@ -71,7 +71,7 @@ export default function AdminDashboardPage() {
               label="Sản phẩm sắp hết"
               value={String(stats.lowStockProducts)}
               icon={AlertTriangle}
-              href="/admin/products"
+              href="/admin/inventory"
               accent="amber"
             />
           </div>
@@ -80,7 +80,7 @@ export default function AdminDashboardPage() {
             <p className="font-tech text-[10px] text-slate-500 uppercase tracking-widest mb-4">
               Truy cập nhanh
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               <AdminQuickLink
                 href="/admin/orders"
                 label="Quản lý đơn hàng"
@@ -88,10 +88,28 @@ export default function AdminDashboardPage() {
                 icon={ShoppingCart}
               />
               <AdminQuickLink
+                href="/admin/inventory"
+                label="Tồn kho theo size"
+                description="Số size, tồn từng biến thể"
+                icon={Warehouse}
+              />
+              <AdminQuickLink
                 href="/admin/products"
                 label="Quản lý sản phẩm"
-                description="Thêm, sửa sản phẩm và tồn kho"
+                description="Thêm, sửa thông tin sản phẩm"
                 icon={Package}
+              />
+              <AdminQuickLink
+                href="/admin/users"
+                label="Khách hàng"
+                description="Danh sách tài khoản user"
+                icon={Users}
+              />
+              <AdminQuickLink
+                href="/admin/vouchers"
+                label="Voucher"
+                description="Mã giảm giá, bật/tắt"
+                icon={Ticket}
               />
             </div>
           </div>
