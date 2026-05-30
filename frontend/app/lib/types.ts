@@ -11,6 +11,7 @@ export type ApiReview = {
   id: number;
   userId: number;
   productId: number;
+  orderId?: number | null;
   rating: number;
   content: string;
   height: number | null;

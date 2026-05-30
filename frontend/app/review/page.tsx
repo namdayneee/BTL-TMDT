@@ -9,10 +9,14 @@ import { fetchMyOrders, fetchOrderById } from '../lib/order-api';
 import { fetchProductById } from '../lib/product-api';
 import { fetchVariantById } from '../lib/product-api';
 import { fetchMyProfile } from '../lib/profile-api';
-import { createReview } from '../lib/review-api';
+import {
+  createReview,
+  fetchReviewByOrder,
+  updateReview,
+} from '../lib/review-api';
 import { getStoredToken } from '../lib/auth-client';
 import { normalizeOrderStatus } from '../lib/order-utils';
-import type { ApiOrder } from '../lib/types';
+import type { ApiOrder, ApiReview } from '../lib/types';
 
 const FIT_FEELING_OPTIONS = [
   { value: 'tight', label: 'Chật', desc: 'Bó hơn mong đợi' },
@@ -39,11 +43,26 @@ function ReviewPageContent() {
   );
   const [productName, setProductName] = useState('Sản phẩm Vault');
   const [productImg, setProductImg] = useState('/images/products/pro1.png');
+  const [existingReviewId, setExistingReviewId] = useState<number | null>(null);
+  const [resolvedOrderId, setResolvedOrderId] = useState<number | null>(
+    orderIdParam ? Number(orderIdParam) : null
+  );
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [doneMessage, setDoneMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
+
+  const applyReviewToForm = (review: ApiReview) => {
+    setExistingReviewId(review.id);
+    setRating(review.rating);
+    setContent(review.content);
+    if (review.height != null) setHeight(String(review.height));
+    if (review.weight != null) setWeight(String(review.weight));
+    if (review.fitFeeling) setFitFeeling(review.fitFeeling);
+    if (review.purchasedSize) setPurchasedSize(review.purchasedSize);
+  };
 
   const loadProductContext = useCallback(
     async (variantId: number, order?: ApiOrder | null) => {
@@ -86,6 +105,8 @@ function ReviewPageContent() {
         });
 
         if (orderIdParam) {
+          const orderId = Number(orderIdParam);
+          setResolvedOrderId(orderId);
           const order = await fetchOrderById(orderIdParam);
           if (!order) throw new Error('Không tìm thấy đơn hàng');
           if (normalizeOrderStatus(order.status) !== 'delivered') {
@@ -95,6 +116,8 @@ function ReviewPageContent() {
           if (!item) throw new Error('Đơn hàng không có sản phẩm');
           const vid = variantIdParam ? Number(variantIdParam) : item.variantId;
           await loadProductContext(vid, order);
+          const existing = await fetchReviewByOrder(orderId);
+          if (existing) applyReviewToForm(existing);
         } else if (variantIdParam) {
           await loadProductContext(Number(variantIdParam));
         } else if (productIdParam) {
@@ -143,15 +166,26 @@ function ReviewPageContent() {
 
       if (!productId) throw new Error('Không xác định được sản phẩm');
 
-      await createReview({
-        productId,
+      const payload = {
         rating,
         content: content.trim(),
         height: height ? Number(height) : undefined,
         weight: weight ? Number(weight) : undefined,
         fitFeeling,
         purchasedSize: purchasedSize || undefined,
-      });
+      };
+
+      if (existingReviewId) {
+        await updateReview(existingReviewId, payload);
+        setDoneMessage('Đánh giá của bạn đã được cập nhật.');
+      } else {
+        await createReview({
+          productId,
+          orderId: resolvedOrderId ?? undefined,
+          ...payload,
+        });
+        setDoneMessage('Cảm ơn bạn! Đánh giá đã được lưu cho đơn hàng này.');
+      }
       setDone(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gửi đánh giá thất bại');
@@ -171,7 +205,7 @@ function ReviewPageContent() {
           </div>
           <h2 className="font-display text-3xl uppercase text-on-surface">Cảm ơn bạn!</h2>
           <p className="font-body text-sm text-on-surface-variant">
-            Đánh giá của bạn giúp cộng đồng Vault chọn size chính xác hơn.
+            {doneMessage || 'Đánh giá của bạn giúp cộng đồng Vault chọn size chính xác hơn.'}
           </p>
           <button
             onClick={() => router.push('/orders')}
@@ -211,9 +245,18 @@ function ReviewPageContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header title="ĐÁNH GIÁ SẢN PHẨM" />
+      <Header title={existingReviewId ? 'ĐÁNH GIÁ ĐÃ GỬI' : 'ĐÁNH GIÁ SẢN PHẨM'} />
 
       <main className="pt-24 pb-20 px-5 md:px-8 lg:px-12 max-w-4xl mx-auto">
+        {existingReviewId && (
+          <div className="mb-6 p-4 rounded-2xl bg-secondary/10 border border-secondary/20 flex items-center gap-3">
+            <CheckCircle size={20} className="text-secondary shrink-0" />
+            <p className="font-tech text-[10px] text-secondary uppercase tracking-widest">
+              Bạn đã đánh giá đơn này — có thể chỉnh sửa và lưu lại bên dưới
+            </p>
+          </div>
+        )}
+
         <section className="flex gap-6 items-center mb-10">
           <div className="w-28 h-36 md:w-32 md:h-40 bg-surface-container-highest overflow-hidden rounded-2xl border border-outline-variant/20 shrink-0 shadow-sm">
             <img alt="Product" className="w-full h-full object-cover" src={productImg} />
@@ -383,7 +426,7 @@ function ReviewPageContent() {
               <Loader2 size={28} className="animate-spin" />
             ) : (
               <>
-                GỬI ĐÁNH GIÁ
+                {existingReviewId ? 'CẬP NHẬT ĐÁNH GIÁ' : 'GỬI ĐÁNH GIÁ'}
                 <ArrowRight size={28} className="group-hover:translate-x-3 transition-transform" />
               </>
             )}
