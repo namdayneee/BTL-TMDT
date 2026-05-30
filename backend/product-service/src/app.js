@@ -26,4 +26,9 @@ app.use("/reviews", reviewRoutes);
 
 app.use("/sizing", sizingRoutes);
 
+import { errorHandler }
+from "./middleware/error.middleware.js";
+
+app.use(errorHandler);
+
 export default app;

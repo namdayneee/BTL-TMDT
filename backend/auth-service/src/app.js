@@ -17,4 +17,9 @@ app.get("/", (req, res) => {
 
 app.use("/auth", authRoutes);
 
+import { errorHandler }
+from "./middleware/error.middleware.js";
+
+app.use(errorHandler);
+
 export default app;
