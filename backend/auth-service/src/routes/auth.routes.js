@@ -16,11 +16,21 @@ import {
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/role.middleware.js";
 
+import { validate }
+from "../middleware/validate.middleware.js";
+
+import {
+  registerSchema,
+  loginSchema,
+} from "../validators/auth.validator.js";
+
+import { asyncHandler } from "../utils/asyncHandler.js";
+
 const router = express.Router();
 
-router.post("/register", register);
+router.post("/register", validate(registerSchema), register);
 
-router.post("/login", login);
+router.post("/login", validate(loginSchema),  asyncHandler(login));
 
 router.get("/me", authenticate, getMe);
 
