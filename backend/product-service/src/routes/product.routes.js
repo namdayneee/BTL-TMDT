@@ -16,6 +16,12 @@ import { authenticate } from "../middleware/auth.middleware.js";
 
 import { authorize } from "../middleware/role.middleware.js";
 
+import { validate } from "../middleware/validate.middleware.js";
+
+import {
+  createProductSchema,
+} from "../validators/product.validator.js";
+
 const router = express.Router();
 
 router.get("/", getProducts);
@@ -48,6 +54,7 @@ router.post(
   "/",
   authenticate,
   authorize("admin"),
+  validate(createProductSchema),
   createProduct
 );
 
@@ -55,6 +62,7 @@ router.put(
   "/:id",
   authenticate,
   authorize("admin"),
+  validate(createProductSchema),
   updateProduct
 );
 

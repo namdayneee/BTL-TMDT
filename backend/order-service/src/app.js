@@ -20,4 +20,9 @@ app.use("/orders", orderRoutes);
 app.use("/admin", adminRoutes);
 app.use("/promotions", promotionRoutes);
 
+import { errorHandler }
+from "./middleware/error.middleware.js";
+
+app.use(errorHandler);
+
 export default app;
