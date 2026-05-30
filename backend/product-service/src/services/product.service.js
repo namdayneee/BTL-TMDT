@@ -1,6 +1,11 @@
 import prisma from "../utils/prisma.js";
 
 export const createProduct = async (data) => {
+  const variants = (data.variants ?? []).map((v) => ({
+    size: String(v.size ?? "").trim(),
+    stock: Number(v.stock) || 0,
+  }));
+
   return prisma.product.create({
     data: {
       name: data.name,
@@ -9,7 +14,7 @@ export const createProduct = async (data) => {
       thumbnail: data.thumbnail,
 
       variants: {
-        create: data.variants,
+        create: variants,
       },
     },
 
