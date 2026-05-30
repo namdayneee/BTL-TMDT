@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Lock, Smartphone } from 'lucide-react';
 import { isAdminRole, loginWithPassword, saveToken } from '../lib/auth-client';
 
-export default function Login() {
+function LoginForm() {
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -171,7 +171,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-16 chrome-effect rounded-full font-tech text-xs text-secondary flex items-center justify-center space-x-3 group relative overflow-hidden active:scale-95 transition-transform"
+              className="w-full h-16 vault-btn-primary rounded-full flex items-center justify-center space-x-3 group relative overflow-hidden active:scale-95 transition-transform"
             >
               <span className="relative z-10 font-bold tracking-[0.2em]">
                 {isSubmitting ? 'ĐANG XỬ LÝ...' : 'ĐĂNG NHẬP'}
@@ -187,7 +187,7 @@ export default function Login() {
               <button
                 type="button"
                 onClick={() => router.push('/register')}
-                className="text-secondary font-bold underline underline-offset-4 cursor-pointer"
+                className="text-secondary font-bold underline underline-offset-4 cursor-pointer hover:text-accent-cyan transition-colors"
               >
                 ĐĂNG KÝ NGAY
               </button>
@@ -196,5 +196,17 @@ export default function Login() {
         </motion.section>
       </div>
     </div>
+  );
+}
+
+export default function Login() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="font-tech text-sm text-on-surface-variant">Đang tải...</p>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }

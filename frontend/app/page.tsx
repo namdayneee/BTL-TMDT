@@ -96,15 +96,19 @@ export default function Home() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="relative z-10 px-5 md:px-10 lg:px-16 max-w-7xl w-full mx-auto flex flex-wrap gap-2 mb-6"
         >
-          {['Cotton 250 GSM', 'Size Thông Minh', 'Số Lượng Có Hạn'].map((tag, i) => (
+          {[
+            { label: 'Cotton 250 GSM', color: 'border-accent-pink/50 bg-accent-pink/20 text-white' },
+            { label: 'Size Thông Minh', color: 'border-accent-yellow/50 bg-accent-yellow/20 text-white' },
+            { label: 'Số Lượng Có Hạn', color: 'border-accent-cyan/50 bg-accent-cyan/20 text-white' },
+          ].map((tag, i) => (
             <motion.span
-              key={tag}
+              key={tag.label}
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.4, delay: 0.3 + i * 0.1 }}
-              className="glass-card px-4 py-1.5 rounded-full font-tech text-[10px] text-white uppercase tracking-widest bg-white/20"
+              className={`glass-card px-4 py-1.5 rounded-full font-tech text-[10px] uppercase tracking-widest border ${tag.color}`}
             >
-              {tag}
+              {tag.label}
             </motion.span>
           ))}
         </motion.div>
@@ -140,7 +144,7 @@ export default function Home() {
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => scrollToSection('bo-suu-tap-moi')}
-            className="bg-secondary text-white px-8 py-4 rounded-lg font-tech text-xs uppercase tracking-widest shadow-xl flex-1 md:flex-none md:min-w-45 hover:opacity-90 transition-all"
+            className="vault-btn-primary px-8 py-4 rounded-lg flex-1 md:flex-none md:min-w-45"
           >
             Sắm Ngay
           </motion.button>
@@ -148,7 +152,7 @@ export default function Home() {
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => scrollToSection('van-hoa-vault')}
-            className="bg-white/15 backdrop-blur-md text-white border border-white/30 px-8 py-4 rounded-lg font-tech text-xs uppercase tracking-widest flex-1 md:flex-none md:min-w-45 transition-all hover:bg-white/25"
+            className="bg-white/15 backdrop-blur-md text-white border-2 border-accent-yellow/60 px-8 py-4 rounded-lg font-tech text-xs uppercase tracking-widest flex-1 md:flex-none md:min-w-45 transition-all hover:bg-accent-yellow/20 hover:border-accent-yellow"
           >
             Văn Hóa
           </motion.button>
@@ -159,12 +163,12 @@ export default function Home() {
       <section id="bo-suu-tap-moi" className="py-16 overflow-hidden scroll-mt-20">
         <div className="px-5 md:px-10 lg:px-16 max-w-7xl mx-auto flex justify-between items-end mb-8">
           <div>
-            <h3 className="font-display text-4xl md:text-5xl text-on-surface mb-2 uppercase">BỘ SƯU TẬP MỚI</h3>
-            <div className="h-1 w-12 bg-secondary"></div>
+            <h3 className="vault-section-title">BỘ SƯU TẬP MỚI</h3>
+            <div className="vault-accent-line"></div>
           </div>
           <p
             onClick={() => router.push('/product')}
-            className="font-tech text-[10px] text-on-surface-variant mb-1 cursor-pointer hover:text-secondary transition-colors"
+            className="vault-link mb-1 cursor-pointer"
           >
             XEM TẤT CẢ ({products.length})
           </p>
@@ -193,7 +197,7 @@ export default function Home() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="font-tech text-[10px] text-secondary uppercase tracking-[0.3em] block mb-8"
+            className="font-tech text-[10px] text-accent-cyan uppercase tracking-[0.3em] block mb-8 font-bold"
           >
             TUYÊN NGÔN 001
           </motion.span>
@@ -203,7 +207,7 @@ export default function Home() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.7 }}
-            className="font-display text-4xl md:text-5xl lg:text-6xl text-on-background mb-10 leading-[0.9] italic uppercase"
+            className="font-display text-4xl md:text-5xl lg:text-6xl mb-10 leading-[0.9] italic uppercase vault-gradient-text"
           >
             VAULT KHÔNG RA ĐỜI ĐỂ CHẠY THEO XU HƯỚNG.
           </motion.h3>
@@ -218,7 +222,7 @@ export default function Home() {
               src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfse9L-5b11PeUMQYO0iceL6_xXa-8r4Eu81WiEvIHiOT-N0xqOrRSR_6_R3Z0WX9GDUfUU5tLhhlqOqyQqBWOByFuVmb88h2yctDmRscUNxthU5maHeaaSuR7d8eA1mS50Z9X0HnOkLBrK8OlwCAy4_vdIZA8AZrxvjgQgXzfNdi0JWcb3sAbpn0itMZI55rXKtRhwxTLexUYksH19wb4jWxRXS8EmtJUucEesh1ol8hrKpLm2QPAs1NMdLjr5h8UxRPNWtC0cW6e"
               alt="Vault Editorial"
             />
-            <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-secondary/10 backdrop-blur-3xl rounded-full pointer-events-none"></div>
+            <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-accent-pink/20 backdrop-blur-3xl rounded-full pointer-events-none vault-float"></div>
           </div>
 
           <motion.p
@@ -235,9 +239,9 @@ export default function Home() {
           <div className="flex justify-end">
             <button
               onClick={() => router.push('/profile')}
-              className="font-tech text-xs text-on-background uppercase border-b-2 border-secondary pb-1 tracking-tighter hover:text-secondary transition-colors"
+              className="font-tech text-xs uppercase pb-1 tracking-tighter vault-gradient-text hover:opacity-80 transition-opacity"
             >
-              Đọc Về Triết Lý
+              Đọc Về Triết Lý →
             </button>
           </div>
         </div>
@@ -245,30 +249,35 @@ export default function Home() {
 
       {/* Sizing Section */}
       <section className="py-16 px-5 md:px-10 lg:px-16 bg-background">
-        <div className="max-w-2xl mx-auto glass-card p-8 md:p-12 rounded-3xl border border-secondary/10 flex flex-col items-center text-center holographic-sweep">
-          <div className="w-16 h-16 bg-secondary/10 rounded-full flex items-center justify-center mb-6">
-            <Ruler size={32} className="text-secondary" />
+        <div className="max-w-2xl mx-auto glass-card p-8 md:p-12 rounded-3xl border border-accent-cyan/20 flex flex-col items-center text-center holographic-sweep vault-glow-card">
+          <div className="w-16 h-16 bg-linear-to-br from-accent-cyan/20 to-accent-pink/20 rounded-full flex items-center justify-center mb-6 vault-float">
+            <Ruler size={32} className="text-accent-cyan" />
           </div>
-          <h3 className="font-display text-4xl md:text-5xl text-on-surface mb-4 uppercase">VAULT SIZING ENGINE 2026</h3>
+          <h3 className="font-display text-4xl md:text-5xl mb-4 uppercase vault-gradient-text">VAULT SIZING ENGINE 2026</h3>
           <p className="font-body text-sm text-on-surface-variant mb-8 max-w-xs md:max-w-sm">
             Hệ thống gợi ý kích cỡ dựa trên phản hồi thực tế. Thuật toán của chúng tôi so sánh chi tiết thông số để tìm ra độ vừa vặn hoàn hảo nhất.
           </p>
           <div className="w-full max-w-sm aspect-2/1 bg-surface-container rounded-2xl flex items-center justify-center relative overflow-hidden mb-8">
             <div className="absolute inset-0 flex items-center justify-around opacity-20">
-              {[1, 2, 3].map(i => <div key={i} className="h-24 w-0.5 bg-secondary"></div>)}
+              {[1, 2, 3].map(i => (
+                <div
+                  key={i}
+                  className={`h-24 w-0.5 rounded-full ${i === 1 ? 'bg-accent-pink' : i === 2 ? 'bg-accent-yellow' : 'bg-accent-cyan'}`}
+                />
+              ))}
             </div>
             <div className="flex flex-col items-center gap-2">
-              <span className="font-tech text-[10px] text-secondary uppercase tracking-widest">Đang Phân Tích Thông Số...</span>
-              <div className="flex gap-1">
-                <div className="w-1.5 h-1.5 bg-secondary rounded-full animate-bounce"></div>
-                <div className="w-1.5 h-1.5 bg-secondary rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                <div className="w-1.5 h-1.5 bg-secondary rounded-full animate-bounce [animation-delay:-0.5s]"></div>
+              <span className="font-tech text-[10px] text-accent-cyan uppercase tracking-widest font-bold">Đang Phân Tích Thông Số...</span>
+              <div className="flex gap-1.5">
+                <div className="w-2 h-2 bg-accent-pink rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-accent-yellow rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                <div className="w-2 h-2 bg-accent-cyan rounded-full animate-bounce [animation-delay:-0.5s]"></div>
               </div>
             </div>
           </div>
           <button
             onClick={() => router.push('/review')}
-            className="chrome-effect w-full max-w-sm py-4 rounded-xl font-tech text-xs text-on-surface uppercase tracking-widest font-bold hover:shadow-lg transition-shadow"
+            className="vault-btn-cyan w-full max-w-sm py-4 rounded-xl"
           >
             Tìm Size Của Bạn
           </button>
@@ -285,8 +294,8 @@ export default function Home() {
             transition={{ duration: 0.6 }}
             className="mb-8"
           >
-            <h3 className="font-display text-4xl md:text-5xl text-on-surface uppercase mb-2">CÂU LẠC BỘ VAULT</h3>
-            <div className="h-1 w-12 bg-secondary"></div>
+            <h3 className="vault-section-title">CÂU LẠC BỘ VAULT</h3>
+            <div className="vault-accent-line"></div>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -298,16 +307,16 @@ export default function Home() {
               transition={{ duration: 0.6, delay: 0.1 }}
               className="bg-on-surface p-8 rounded-3xl relative overflow-hidden group"
             >
-              <div className="absolute inset-0 bg-linear-to-br from-secondary/40 via-transparent to-transparent opacity-50 pointer-events-none"></div>
+              <div className="absolute inset-0 bg-linear-to-br from-accent-pink/30 via-accent-yellow/10 to-accent-cyan/20 opacity-60 pointer-events-none"></div>
               <div className="relative z-10">
                 <div className="flex justify-between items-start mb-12">
-                  <span className="font-tech text-[10px] text-secondary tracking-[0.5em] uppercase">ELITE</span>
-                  <Star size={20} className="text-white" />
+                  <span className="font-tech text-[10px] text-accent-yellow tracking-[0.5em] uppercase font-bold">ELITE</span>
+                  <Star size={20} className="text-accent-yellow fill-accent-yellow" />
                 </div>
                 <div className="mb-8">
                   <p className="font-body text-sm text-surface-dim opacity-70 mb-3">Trạng Thái Thành Viên</p>
                   <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full bg-secondary w-3/4 rounded-full"></div>
+                    <div className="h-full w-3/4 rounded-full bg-linear-to-r from-accent-pink via-accent-yellow to-accent-cyan"></div>
                   </div>
                 </div>
                 <div className="flex justify-between items-end">
@@ -317,7 +326,7 @@ export default function Home() {
                   </button>
                 </div>
               </div>
-              <div className="absolute -bottom-12 -right-12 w-48 h-48 bg-secondary/20 blur-3xl rounded-full pointer-events-none"></div>
+              <div className="absolute -bottom-12 -right-12 w-48 h-48 bg-accent-pink/25 blur-3xl rounded-full pointer-events-none"></div>
             </motion.div>
 
             {/* CORE Card */}
@@ -334,11 +343,11 @@ export default function Home() {
                   <Lock size={20} className="text-on-surface-variant" />
                 </div>
                 <p className="font-body text-sm text-on-surface-variant mb-8 leading-relaxed">
-                  Mở khóa các sản phẩm độc quyền và tích lũy <span className="text-secondary font-bold">&apos;Vault Credits&apos;</span> qua mỗi đơn hàng. Ưu tiên truy cập các bộ sưu tập giới hạn trước khi ra mắt.
+                  Mở khóa các sản phẩm độc quyền và tích lũy <span className="text-accent-pink font-bold">&apos;Vault Credits&apos;</span> qua mỗi đơn hàng. Ưu tiên truy cập các bộ sưu tập giới hạn trước khi ra mắt.
                 </p>
                 <button
                   onClick={() => router.push('/profile')}
-                  className="bg-on-surface text-white w-full py-4 rounded-xl font-tech text-xs uppercase tracking-widest hover:opacity-90 transition-opacity"
+                  className="vault-btn-primary w-full py-4 rounded-xl"
                 >
                   Gia Nhập Hội
                 </button>
@@ -357,7 +366,7 @@ export default function Home() {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <h3 className="font-display text-5xl md:text-6xl lg:text-7xl text-on-background uppercase leading-none">
+            <h3 className="font-display text-5xl md:text-6xl lg:text-7xl uppercase leading-none vault-gradient-text">
               LOOKBOOK<br />SS.24
             </h3>
           </motion.div>
@@ -445,8 +454,8 @@ export default function Home() {
           transition={{ duration: 0.6 }}
           className="px-5 md:px-10 lg:px-16 text-center mb-10"
         >
-          <h3 className="font-display text-4xl md:text-5xl text-on-background uppercase mb-2">VĂN HÓA VAULT</h3>
-          <p className="font-body text-sm text-on-surface-variant italic">#VaultOnTheStreets</p>
+          <h3 className="vault-section-title text-center">VĂN HÓA VAULT</h3>
+          <p className="font-body text-sm text-accent-pink italic font-medium">#VaultOnTheStreets</p>
         </motion.div>
 
         {/* Horizontal scroll feed */}
@@ -477,7 +486,7 @@ export default function Home() {
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.97 }}
-            className="w-full py-4 border-2 border-on-surface font-tech text-xs uppercase tracking-widest hover:bg-on-surface hover:text-white transition-colors flex items-center justify-center gap-3"
+            className="vault-btn-outline w-full py-4 rounded-xl flex items-center justify-center gap-3"
           >
             <Users size={16} />
             Gia Nhập Cộng Đồng

@@ -67,9 +67,10 @@ export default function ProductsPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <h1 className="font-display text-5xl md:text-6xl text-on-surface uppercase tracking-tight leading-none whitespace-nowrap">
+            <h1 className="font-display text-5xl md:text-6xl uppercase tracking-tight leading-none whitespace-nowrap vault-gradient-text">
               TẤT CẢ SẢN PHẨM
             </h1>
+            <div className="vault-accent-line mt-3"></div>
           </motion.div>
         </div>
 
@@ -95,7 +96,7 @@ export default function ProductsPage() {
                 <select
                   value={activeSort}
                   onChange={e => setActiveSort(e.target.value)}
-                  className="bg-surface-container border border-outline-variant/30 rounded-full px-4 py-2.5 font-tech text-[10px] uppercase tracking-widest text-on-surface-variant focus:outline-none focus:border-secondary transition-colors cursor-pointer hidden md:block"
+                  className="bg-surface-container border border-outline-variant/30 rounded-full px-4 py-2.5 font-tech text-[10px] uppercase tracking-widest text-on-surface-variant focus:outline-none focus:border-accent-cyan transition-colors cursor-pointer hidden md:block"
                 >
                   {sortOptions.map(o => (
                     <option key={o.id} value={o.id}>{o.label}</option>
@@ -132,7 +133,7 @@ export default function ProductsPage() {
                         onClick={() => { setActiveSort(o.id); setShowFilters(false); }}
                         className={`px-4 py-2 rounded-full font-tech text-[10px] uppercase tracking-widest transition-all ${
                           activeSort === o.id
-                            ? 'bg-secondary text-white'
+                            ? 'vault-btn-primary px-4 py-2 rounded-full'
                             : 'bg-surface-container text-on-surface-variant'
                         }`}
                       >

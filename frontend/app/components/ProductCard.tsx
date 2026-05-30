@@ -105,9 +105,9 @@ export default function ProductCard({
                 isCarousel ? 'text-[10px] px-3 py-1' : 'text-[10px] px-2.5 py-1 tracking-wide'
               } ${
                 b === 'MỚI'
-                  ? 'bg-secondary text-white'
+                  ? 'vault-badge-cyan'
                   : b === 'GIỚI HẠN'
-                    ? 'bg-tertiary text-white'
+                    ? 'vault-badge-yellow'
                     : 'glass-card text-on-surface'
               }`}
             >

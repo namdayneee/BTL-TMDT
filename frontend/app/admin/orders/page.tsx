@@ -76,48 +76,49 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="space-y-6">
-      <AdminPageTitle title="Đơn hàng">
-        <button
-          type="button"
-          onClick={() => void loadOrders()}
-          className="chrome-effect px-5 py-2.5 rounded-full font-tech text-[10px] font-bold text-secondary uppercase tracking-widest active:scale-95 transition-all shrink-0"
-        >
+      <AdminPageTitle subtitle="Quản lý và cập nhật trạng thái từng đơn — thay đổi được đồng bộ realtime.">
+        <button type="button" onClick={() => void loadOrders()} className="admin-btn-primary shrink-0">
           Làm mới
         </button>
       </AdminPageTitle>
 
-      {error && (
-        <div className="rounded-2xl bg-tertiary-container border border-tertiary/20 px-4 py-3 text-sm text-tertiary font-body">
-          {error}
-        </div>
-      )}
+      {error && <div className="admin-alert-error font-body">{error}</div>}
 
       {loading ? (
-        <p className="font-tech text-sm text-on-surface-variant">Đang tải...</p>
+        <div className="admin-card admin-card-static p-12 text-center">
+          <p className="font-tech text-sm text-slate-500">Đang tải đơn hàng...</p>
+        </div>
       ) : orders.length === 0 ? (
-        <p className="font-tech text-sm text-on-surface-variant">Chưa có đơn hàng nào.</p>
+        <div className="admin-card admin-card-static p-12 text-center">
+          <p className="font-tech text-sm text-slate-500">Chưa có đơn hàng nào.</p>
+        </div>
       ) : (
-        <div className="glass-card rounded-3xl border border-outline-variant/20 overflow-hidden">
+        <div className="admin-card admin-card-static admin-table-wrap overflow-hidden">
+          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+            <p className="font-tech text-[10px] text-slate-500 uppercase tracking-widest">
+              {orders.length} đơn hàng
+            </p>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left min-w-[640px]">
               <thead>
-                <tr className="border-b border-outline-variant/30 bg-surface-container-low">
-                  <th className="px-4 py-3 font-tech text-[10px] uppercase tracking-widest text-on-surface-variant">
+                <tr className="border-b border-slate-200/80">
+                  <th className="px-5 py-4 font-tech text-[10px] uppercase tracking-widest text-slate-500 font-bold">
                     Mã đơn
                   </th>
-                  <th className="px-4 py-3 font-tech text-[10px] uppercase tracking-widest text-on-surface-variant">
+                  <th className="px-5 py-4 font-tech text-[10px] uppercase tracking-widest text-slate-500 font-bold">
                     Khách
                   </th>
-                  <th className="px-4 py-3 font-tech text-[10px] uppercase tracking-widest text-on-surface-variant">
+                  <th className="px-5 py-4 font-tech text-[10px] uppercase tracking-widest text-slate-500 font-bold">
                     Ngày
                   </th>
-                  <th className="px-4 py-3 font-tech text-[10px] uppercase tracking-widest text-on-surface-variant">
+                  <th className="px-5 py-4 font-tech text-[10px] uppercase tracking-widest text-slate-500 font-bold">
                     Số SP
                   </th>
-                  <th className="px-4 py-3 font-tech text-[10px] uppercase tracking-widest text-on-surface-variant">
+                  <th className="px-5 py-4 font-tech text-[10px] uppercase tracking-widest text-slate-500 font-bold">
                     Tổng
                   </th>
-                  <th className="px-4 py-3 font-tech text-[10px] uppercase tracking-widest text-on-surface-variant">
+                  <th className="px-5 py-4 font-tech text-[10px] uppercase tracking-widest text-slate-500 font-bold">
                     Trạng thái
                   </th>
                 </tr>
@@ -128,24 +129,24 @@ export default function AdminOrdersPage() {
                   return (
                     <tr
                       key={order.id}
-                      className="border-b border-outline-variant/10 last:border-0 hover:bg-surface-container-low/50 transition-colors"
+                      className="border-b border-slate-100 last:border-0 transition-colors"
                     >
-                      <td className="px-4 py-4 font-tech text-sm font-bold text-on-surface">
+                      <td className="px-5 py-4 font-tech text-sm font-bold text-secondary">
                         #{order.id}
                       </td>
-                      <td className="px-4 py-4 font-body text-sm text-on-surface-variant">
+                      <td className="px-5 py-4 font-body text-sm text-slate-600">
                         {order.userId}
                       </td>
-                      <td className="px-4 py-4 font-body text-sm text-on-surface-variant">
+                      <td className="px-5 py-4 font-body text-sm text-slate-600">
                         {formatOrderDate(order.createdAt)}
                       </td>
-                      <td className="px-4 py-4 font-body text-sm text-on-surface-variant">
+                      <td className="px-5 py-4 font-body text-sm text-slate-600">
                         {order.items.length}
                       </td>
-                      <td className="px-4 py-4 font-body text-sm font-semibold text-on-surface">
+                      <td className="px-5 py-4 font-body text-sm font-semibold text-slate-900">
                         {formatVND(order.totalAmount)}
                       </td>
-                      <td className="px-4 py-4">
+                      <td className="px-5 py-4">
                         <div className="flex flex-col gap-2 min-w-[140px]">
                           <span
                             className={`inline-flex w-fit px-2.5 py-0.5 rounded-full text-[10px] font-tech uppercase font-bold transition-colors duration-300 ${display.statusBg} ${display.statusText}`}
@@ -161,7 +162,7 @@ export default function AdminOrdersPage() {
                                 e.target.value as OrderStatus
                               )
                             }
-                            className="text-xs border border-outline-variant/40 rounded-xl px-2 py-2 bg-surface font-body text-on-surface focus:border-secondary outline-none disabled:opacity-50"
+                            className="text-xs border border-slate-200 rounded-xl px-3 py-2 bg-white font-body text-slate-800 focus:border-secondary focus:ring-2 focus:ring-secondary/20 outline-none disabled:opacity-50"
                           >
                             {ORDER_STATUS_OPTIONS.map((opt) => (
                               <option key={opt.value} value={opt.value}>

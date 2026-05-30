@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '../components/Header';
 import { Trash2, Minus, Plus, ArrowRight, ShoppingBag } from 'lucide-react';
@@ -11,6 +11,7 @@ import { formatVND } from '../lib/utils';
 export default function Cart() {
   const router = useRouter();
   const { items, loading, subtotal, updateQuantity, removeItem, refreshCart } = useCart();
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
     const token = getStoredToken();
@@ -18,13 +19,21 @@ export default function Cart() {
       router.push('/login?redirect=/cart');
       return;
     }
+    setAuthReady(true);
     void refreshCart();
   }, [router, refreshCart]);
 
   const total = subtotal;
 
-  if (!getStoredToken()) {
-    return null;
+  if (!authReady) {
+    return (
+      <div className="min-h-screen bg-background pb-40 lg:pb-16">
+        <Header title="GIỎ HÀNG" />
+        <main className="pt-24 px-5 md:px-8 lg:px-12 max-w-3xl mx-auto">
+          <p className="text-center font-tech text-sm text-on-surface-variant py-16">Đang tải...</p>
+        </main>
+      </div>
+    );
   }
 
   return (
@@ -139,7 +148,7 @@ export default function Cart() {
             <div className="hidden lg:block">
               <button
                 onClick={() => router.push('/checkout')}
-                className="w-full h-16 bg-secondary text-white rounded-full flex items-center justify-center gap-4 shadow-xl shadow-secondary/20 active:scale-[0.98] transition-all holographic-sweep group font-tech text-xs font-bold uppercase tracking-[0.2em]"
+                className="w-full h-16 vault-btn-primary rounded-full flex items-center justify-center gap-4 active:scale-[0.98] transition-all holographic-sweep group font-tech text-xs font-bold uppercase tracking-[0.2em]"
               >
                 <ShoppingBag size={18} />
                 TIẾN HÀNH THANH TOÁN
@@ -158,7 +167,7 @@ export default function Cart() {
           </div>
           <button
             onClick={() => router.push('/checkout')}
-            className="w-full h-14 bg-secondary text-white rounded-full flex items-center justify-center gap-3 shadow-xl shadow-secondary/20 active:scale-[0.98] transition-all group font-tech text-xs font-bold uppercase tracking-[0.2em]"
+            className="w-full h-14 vault-btn-primary rounded-full flex items-center justify-center gap-3 active:scale-[0.98] transition-all group font-tech text-xs font-bold uppercase tracking-[0.2em]"
           >
             TIẾN HÀNH THANH TOÁN
             <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" />

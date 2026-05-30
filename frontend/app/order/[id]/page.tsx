@@ -1,133 +1,347 @@
 'use client';
 
+import { useCallback, useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import Header from '../../components/Header';
-import { Truck, Check, MapPin, Package, Copy, MessageCircle, AlertCircle } from 'lucide-react';
+import DeliveryMapPanel from '../../components/DeliveryMapPanel';
+import {
+  Truck,
+  Check,
+  MapPin,
+  Package,
+  Copy,
+  MessageCircle,
+  AlertCircle,
+  Loader2,
+  Star,
+} from 'lucide-react';
+import { clearToken, fetchCurrentUser, getStoredToken, type AuthUser } from '../../lib/auth-client';
+import { fetchOrderById } from '../../lib/order-api';
+import { fetchVariantById } from '../../lib/product-api';
+import {
+  joinOrderRoom,
+  joinUserOrdersRoom,
+  subscribeOrderStatusUpdates,
+} from '../../lib/order-socket';
+import {
+  buildTrackingSteps,
+  formatOrderDate,
+  getOrderStatusDisplay,
+  getTrackingProgressPercent,
+  normalizeOrderStatus,
+} from '../../lib/order-utils';
+import { formatVND } from '../../lib/utils';
+import type { ApiOrder, ApiVariant } from '../../lib/types';
+
+type ProductSummary = {
+  name: string;
+  img: string;
+  size: string;
+  lineTotal: number;
+};
 
 export default function OrderDetail() {
+  const router = useRouter();
+  const params = useParams();
+  const orderIdParam = params.id as string;
+
+  const [authState, setAuthState] = useState<'checking' | 'authenticated' | 'unauthenticated'>('checking');
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [order, setOrder] = useState<ApiOrder | null>(null);
+  const [product, setProduct] = useState<ProductSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const loadOrder = useCallback(async () => {
+    const data = await fetchOrderById(orderIdParam);
+    if (!data) {
+      setNotFound(true);
+      setOrder(null);
+      setProduct(null);
+      return;
+    }
+
+    const normalized: ApiOrder = {
+      ...data,
+      status: normalizeOrderStatus(data.status),
+    };
+    setNotFound(false);
+    setOrder(normalized);
+
+    const firstItem = normalized.items[0];
+    if (!firstItem) {
+      setProduct(null);
+      return;
+    }
+
+    try {
+      const variant: ApiVariant = await fetchVariantById(firstItem.variantId);
+      setProduct({
+        name: variant.product.name,
+        img: variant.product.thumbnail || '/images/products/pro1.png',
+        size: variant.size,
+        lineTotal: firstItem.price * firstItem.quantity,
+      });
+    } catch {
+      setProduct({
+        name: `Sản phẩm #${firstItem.variantId}`,
+        img: '/images/products/pro1.png',
+        size: '—',
+        lineTotal: firstItem.price * firstItem.quantity,
+      });
+    }
+  }, [orderIdParam]);
+
+  useEffect(() => {
+    const init = async () => {
+      const token = getStoredToken();
+      if (!token) {
+        setAuthState('unauthenticated');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const currentUser = await fetchCurrentUser(token);
+        setUser(currentUser);
+        setAuthState('authenticated');
+        await loadOrder();
+      } catch {
+        clearToken();
+        setAuthState('unauthenticated');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void init();
+  }, [loadOrder]);
+
+  useEffect(() => {
+    if (!user || !order) return;
+
+    joinUserOrdersRoom(user.id);
+    joinOrderRoom(order.id);
+
+    return subscribeOrderStatusUpdates(({ orderId, status }) => {
+      if (orderId !== order.id) return;
+      setOrder((prev) =>
+        prev ? { ...prev, status: normalizeOrderStatus(status) } : prev
+      );
+    });
+  }, [user, order?.id]);
+
+  const handleCopyTracking = async () => {
+    if (!order) return;
+    const code = `VEX-${order.id}`;
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  if (authState === 'checking' || loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="animate-spin text-secondary" size={32} />
+      </div>
+    );
+  }
+
+  if (authState === 'unauthenticated') {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header title="Chi tiết đơn hàng" />
+        <main className="pt-24 pb-16 px-5 flex items-center justify-center">
+          <button
+            onClick={() => router.push(`/login?redirect=/order/${orderIdParam}`)}
+            className="vault-btn-primary px-8 py-3 rounded-full font-tech text-xs uppercase tracking-widest"
+          >
+            Đăng nhập để xem đơn hàng
+          </button>
+        </main>
+      </div>
+    );
+  }
+
+  if (notFound || !order) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header title="Chi tiết đơn hàng" />
+        <main className="pt-24 pb-16 px-5 text-center">
+          <p className="font-tech text-sm text-on-surface-variant">Không tìm thấy đơn hàng.</p>
+          <button
+            onClick={() => router.push('/orders')}
+            className="mt-6 vault-btn-primary px-8 py-3 rounded-full font-tech text-xs uppercase tracking-widest"
+          >
+            Về danh sách đơn
+          </button>
+        </main>
+      </div>
+    );
+  }
+
+  const statusDisplay = getOrderStatusDisplay(order.status);
+  const trackingSteps = buildTrackingSteps(order);
+  const progressPercent = getTrackingProgressPercent(order.status);
+  const trackingCode = `VEX-${order.id}`;
+  const firstVariantId = order.items[0]?.variantId;
+  const canReview = order.status === 'delivered' && firstVariantId;
+
   return (
     <div className="min-h-screen bg-background">
       <Header title="Chi tiết đơn hàng" />
 
       <main className="pt-24 pb-16 px-5 md:px-8 lg:px-12 max-w-6xl mx-auto">
-
-        {/* Order header */}
-        <div className="flex justify-between items-end mb-8">
-          <h2 className="font-display text-4xl md:text-5xl tracking-widest text-on-surface">#VT-99281</h2>
-          <div className="glass-card px-4 py-1.5 rounded-full flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
-            <span className="font-tech text-[10px] font-bold text-secondary uppercase tracking-[0.2em]">ĐANG GIAO</span>
+        <div className="flex justify-between items-end mb-8 gap-4 flex-wrap">
+          <h2 className="font-display text-4xl md:text-5xl tracking-widest text-on-surface">
+            #VT-{order.id}
+          </h2>
+          <div
+            className={`glass-card px-4 py-1.5 rounded-full flex items-center gap-2 ${statusDisplay.statusBg}`}
+          >
+            {order.status === 'shipping' && (
+              <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+            )}
+            <span
+              className={`font-tech text-[10px] font-bold uppercase tracking-[0.2em] ${statusDisplay.statusText}`}
+            >
+              {statusDisplay.label}
+            </span>
           </div>
         </div>
 
+        <p className="font-body text-xs text-on-surface-variant mb-6 -mt-4">
+          Đặt ngày {formatOrderDate(order.createdAt)}
+          {order.promoCode ? ` · Mã KM: ${order.promoCode}` : ''}
+        </p>
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-          {/* ── Main content ── */}
           <section className="lg:col-span-8 space-y-6">
+            <DeliveryMapPanel
+              status={order.status}
+              trackingCode={trackingCode}
+              recipientName={order.shippingName}
+              address={order.shippingAddress}
+            />
 
-            {/* Map */}
-            <div className="relative h-75 md:h-100 rounded-3xl overflow-hidden glass-card group shadow-2xl">
-              <img
-                className="w-full h-full object-cover grayscale brightness-110"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHSNROoYJP0GlCJ41xOYipjLQQqWGh_qVZnF8dqFsfLXZv5wEGmAFtosGcJA_NlUrZusAMYN2ifTOm1HDCAhaoRX4WioOIrlHJ_IZE1dODQJ9oiHGP8N35HCrMhyNYg5kRoFSXULAbWj_4RG5NTxwiwTXwDrpOnG0wZg-bHEyljs_lomiXwVjLmntcuK67H-auoqFQ9Z-YnWC0QSF4ChQygTnD0GMyJ-mN4jvtzZnC7aSXgtNmf3RVl7TCeHP16vX63pQtJM0DE39m"
-                alt="Delivery Map"
-              />
-              <div className="absolute inset-0 bg-linear-to-t from-surface/40 via-transparent to-transparent"></div>
-              <div className="absolute inset-0 holographic-sweep opacity-30 pointer-events-none"></div>
-            </div>
-
-            {/* Tracking Steps */}
             <div className="glass-card p-8 rounded-3xl relative overflow-hidden">
               <div className="relative space-y-10">
-                <div className="absolute left-3.25 top-2 bottom-5 w-0.5 bg-outline-variant/30"></div>
-                <div className="absolute left-3.25 top-2 h-[70%] w-0.5 bg-secondary"></div>
+                <div className="absolute left-3.25 top-2 bottom-5 w-0.5 bg-outline-variant/30" />
+                <div
+                  className="absolute left-3.25 top-2 w-0.5 bg-secondary transition-all duration-500"
+                  style={{ height: `${progressPercent}%`, maxHeight: 'calc(100% - 1.25rem)' }}
+                />
 
-                <div className="flex gap-6 relative">
-                  <div className="z-10 w-7 h-7 rounded-full bg-surface-container border-2 border-outline-variant flex items-center justify-center"></div>
-                  <div className="flex-1 pb-4">
-                    <h4 className="font-tech text-sm font-bold text-on-surface-variant opacity-60 uppercase tracking-tight">Dự kiến giao hàng</h4>
-                    <p className="font-body text-xs text-on-surface-variant/60">Thứ Năm, 24 Tháng 10</p>
+                {trackingSteps.map((step) => (
+                  <div key={step.id} className="flex gap-6 relative">
+                    <div
+                      className={`z-10 w-7 h-7 rounded-full flex items-center justify-center ${
+                        step.active
+                          ? 'bg-secondary shadow-lg shadow-secondary/30'
+                          : step.completed
+                            ? 'bg-secondary'
+                            : 'bg-surface-container border-2 border-outline-variant'
+                      }`}
+                    >
+                      {step.icon === 'truck' ? (
+                        <Truck size={14} className="text-white fill-current" />
+                      ) : step.completed ? (
+                        <Check size={14} className="text-white" />
+                      ) : null}
+                    </div>
+                    <div className="flex-1 pb-4">
+                      <h4
+                        className={`font-tech text-sm font-bold uppercase tracking-tight ${
+                          step.active
+                            ? 'text-secondary'
+                            : step.completed
+                              ? 'text-on-surface'
+                              : 'text-on-surface-variant opacity-60'
+                        }`}
+                      >
+                        {step.title}
+                      </h4>
+                      {step.description && (
+                        <p className="font-body text-sm text-on-surface font-medium">{step.description}</p>
+                      )}
+                      {step.time && (
+                        <p className="font-tech text-[10px] font-bold text-on-surface-variant mt-1 opacity-60 uppercase tracking-widest">
+                          {step.time}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-
-                <div className="flex gap-6 relative">
-                  <div className="z-10 w-7 h-7 rounded-full bg-secondary flex items-center justify-center shadow-lg shadow-secondary/30">
-                    <Truck size={14} className="text-white fill-current" />
-                  </div>
-                  <div className="flex-1 pb-4">
-                    <h4 className="font-tech text-sm font-bold text-secondary uppercase tracking-tight">Đang vận chuyển</h4>
-                    <p className="font-body text-sm text-on-surface font-medium">Shipper đang trên đường tới địa chỉ của bạn</p>
-                    <p className="font-tech text-[10px] font-bold text-secondary mt-1 uppercase tracking-widest">10:45 AM, 23/10</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-6 relative">
-                  <div className="z-10 w-7 h-7 rounded-full bg-secondary flex items-center justify-center">
-                    <Check size={14} className="text-white" />
-                  </div>
-                  <div className="flex-1 pb-4">
-                    <h4 className="font-tech text-sm font-bold text-on-surface uppercase tracking-tight">Rời kho trung chuyển</h4>
-                    <p className="font-tech text-[10px] font-bold text-on-surface-variant mt-1 opacity-60 uppercase tracking-widest">08:30 AM, 23/10</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-6 relative">
-                  <div className="z-10 w-7 h-7 rounded-full bg-secondary flex items-center justify-center">
-                    <Check size={14} className="text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-tech text-sm font-bold text-on-surface uppercase tracking-tight">Đơn hàng đã xác nhận</h4>
-                    <p className="font-tech text-[10px] font-bold text-on-surface-variant mt-1 opacity-60 uppercase tracking-widest">09:15 PM, 22/10</p>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           </section>
 
-          {/* ── Sidebar ── */}
           <aside className="lg:col-span-4 space-y-6">
-
-            {/* Product Card */}
             <div className="glass-card overflow-hidden rounded-3xl border border-outline-variant/30">
               <div className="h-56 md:h-64 relative group overflow-hidden">
                 <img
                   className="w-full h-full object-cover"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuDHiDtTb-tTLtCH3MrFLinkKsebAKaJgBDmHJrB7C0lWXsazb7rVFbLSPa80Om9nUjGQGMHsl159ObLa4AaTYX1v8lTnvqCNc8yig5r69lvBpEcSyIume91YMuQi1NDi3SSZVS0ZP_FgEpxuoCw0IpxQeb8Wj38G5-HYdjZRwkgi_u6WEjTyUHaTO5Y7Rtob2ub8FZxUB7JVO1u0p4PnfR8AIajhoTudGJGcZ_e-6TTvAXHhHfEE6pu1l1LHXhMe8PIsyya5buWGtoE"
-                  alt="Product"
+                  src={product?.img || '/images/products/pro1.png'}
+                  alt={product?.name || 'Product'}
                 />
                 <div className="absolute bottom-0 left-0 right-0 p-5 bg-linear-to-t from-black/60 to-transparent">
-                  <p className="font-tech text-[9px] text-white/70 uppercase tracking-[0.3em] font-bold">STREETWEAR ARCHIVE</p>
-                  <h3 className="font-tech text-md font-bold text-white uppercase mt-1">Neo-Tokyo Tech Shell V1</h3>
+                  <p className="font-tech text-[9px] text-white/70 uppercase tracking-[0.3em] font-bold">
+                    VAULT ORDER
+                  </p>
+                  <h3 className="font-tech text-md font-bold text-white uppercase mt-1">
+                    {product?.name || 'Sản phẩm Vault'}
+                  </h3>
                 </div>
               </div>
               <div className="p-6 space-y-6">
                 <div className="flex justify-between items-center font-tech text-xs uppercase tracking-widest opacity-70">
-                  <span>Size: L</span>
-                  <span>Color: Onyx Black</span>
+                  <span>Size: {product?.size || '—'}</span>
+                  <span>Số lượng: {order.items[0]?.quantity ?? 1}</span>
                 </div>
+                {order.discountAmount > 0 && (
+                  <div className="flex justify-between font-tech text-xs uppercase tracking-widest opacity-70">
+                    <span>Giảm giá</span>
+                    <span className="text-emerald-600">-{formatVND(order.discountAmount)}</span>
+                  </div>
+                )}
+                {order.shippingFee > 0 && (
+                  <div className="flex justify-between font-tech text-xs uppercase tracking-widest opacity-70">
+                    <span>Phí ship</span>
+                    <span>{formatVND(order.shippingFee)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center pt-5 border-t border-outline-variant/20">
                   <span className="font-tech text-xs font-bold uppercase opacity-80">Tổng cộng</span>
-                  <span className="font-display text-4xl text-secondary">4.250.000₫</span>
+                  <span className="font-display text-4xl text-secondary">{formatVND(order.totalAmount)}</span>
                 </div>
               </div>
             </div>
 
-            {/* Address */}
             <div className="glass-card p-6 rounded-3xl space-y-4">
               <div className="flex items-center gap-2 text-on-surface-variant">
                 <MapPin size={18} className="fill-secondary text-secondary" />
                 <h4 className="font-tech text-[10px] font-bold uppercase tracking-widest">Địa chỉ nhận hàng</h4>
               </div>
               <div>
-                <p className="font-tech text-sm font-bold uppercase text-on-surface">Nguyễn Văn A</p>
-                <p className="font-body text-xs text-on-surface-variant opacity-70 mt-1 leading-relaxed">
-                  Số 123, Đường Láng, Phường Láng Thượng,<br />
-                  Quận Đống Đa, Hà Nội, Việt Nam
+                <p className="font-tech text-sm font-bold uppercase text-on-surface">
+                  {order.shippingName || '—'}
                 </p>
-                <p className="font-tech text-[10px] text-secondary mt-3 font-bold uppercase tracking-widest cursor-pointer">(+84) 90 123 4567</p>
+                <p className="font-body text-xs text-on-surface-variant opacity-70 mt-1 leading-relaxed whitespace-pre-line">
+                  {order.shippingAddress || 'Chưa có địa chỉ'}
+                </p>
+                {order.shippingPhone && (
+                  <p className="font-tech text-[10px] text-secondary mt-3 font-bold uppercase tracking-widest">
+                    {order.shippingPhone}
+                  </p>
+                )}
               </div>
             </div>
 
-            {/* Carrier */}
             <div className="glass-card p-6 rounded-3xl space-y-4">
               <div className="flex items-center gap-2 text-on-surface-variant">
                 <Package size={18} className="fill-secondary text-secondary" />
@@ -137,24 +351,51 @@ export default function OrderDetail() {
                 <div>
                   <p className="font-tech text-sm font-bold uppercase text-on-surface">VAULT Express Premium</p>
                   <p className="font-tech text-[10px] text-on-surface-variant opacity-60 mt-1 uppercase tracking-widest">
-                    Mã vận đơn: <span className="text-secondary select-all">VEX-9921-8812</span>
+                    Mã vận đơn:{' '}
+                    <span className="text-secondary select-all">{trackingCode}</span>
                   </p>
+                  {copied && (
+                    <p className="font-tech text-[9px] text-emerald-600 mt-1 uppercase">Đã sao chép</p>
+                  )}
                 </div>
-                <button className="p-2.5 bg-secondary-container/10 rounded-xl hover:bg-secondary-container/20 transition-colors text-secondary">
+                <button
+                  type="button"
+                  onClick={() => void handleCopyTracking()}
+                  className="p-2.5 bg-secondary-container/10 rounded-xl hover:bg-secondary-container/20 transition-colors text-secondary"
+                >
                   <Copy size={16} />
                 </button>
               </div>
             </div>
 
-            {/* Actions */}
             <div className="flex flex-col gap-3">
-              <button className="w-full bg-secondary text-white h-14 rounded-2xl font-tech text-xs font-bold uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:opacity-95 shadow-xl shadow-secondary/10 transition-all active:scale-95">
+              {canReview && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    router.push(`/review?orderId=${order.id}&variantId=${firstVariantId}`)
+                  }
+                  className="w-full vault-btn-primary h-14 rounded-2xl font-tech text-xs font-bold uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all active:scale-95"
+                >
+                  <Star size={18} />
+                  Đánh giá sản phẩm
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => router.push('/orders')}
+                className="w-full border border-outline-variant text-on-surface h-14 rounded-2xl font-tech text-xs font-bold uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-surface-container transition-all active:scale-95"
+              >
                 <MessageCircle size={18} />
-                Liên hệ hỗ trợ
+                Về danh sách đơn
               </button>
-              <button className="w-full border border-outline-variant text-on-surface h-14 rounded-2xl font-tech text-xs font-bold uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-surface-container transition-all active:scale-95">
+              <button
+                type="button"
+                className="w-full border border-outline-variant text-on-surface h-14 rounded-2xl font-tech text-xs font-bold uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-surface-container transition-all active:scale-95 opacity-60 cursor-not-allowed"
+                disabled
+              >
                 <AlertCircle size={18} />
-                Khiếu nại
+                Khiếu nại (sắp có)
               </button>
             </div>
           </aside>

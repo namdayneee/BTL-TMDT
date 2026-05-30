@@ -26,12 +26,20 @@ model CartItem {
 }
 
 model Order {
-  id         Int         @id @default(autoincrement())
-  userId     Int
-  totalAmount Float
-  status     String      @default("PENDING")
-  createdAt  DateTime    @default(now())
-  items      OrderItem[]
+  id              Int         @id @default(autoincrement())
+  userId          Int
+  totalAmount     Float
+  shippingFee     Float       @default(0)
+  discountAmount  Float       @default(0)
+  status          String      @default("pending")
+  paymentMethod   String?
+  paymentStatus   String      @default("pending")
+  promoCode       String?
+  shippingName    String?
+  shippingPhone   String?
+  shippingAddress String?
+  createdAt       DateTime    @default(now())
+  items           OrderItem[]
 }
 
 model OrderItem {
@@ -41,4 +49,15 @@ model OrderItem {
   quantity  Int
   price     Float
   order     Order @relation(fields: [orderId], references: [id])
+}
+
+model Promotion {
+  id            Int       @id @default(autoincrement())
+  code          String    @unique
+  discountType  String
+  discountValue Float
+  minOrderValue Float?
+  expiresAt     DateTime?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
 }

@@ -94,7 +94,7 @@ function ProductFormModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-on-surface/40 backdrop-blur-sm">
-      <div className="glass-card rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-outline-variant/30 shadow-2xl">
+      <div className="admin-card admin-card-static w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
         <div className="flex items-center justify-between p-5 border-b border-outline-variant/20">
           <h3 className="font-display text-2xl text-on-surface uppercase tracking-wide">
             {mode === 'create' ? 'Thêm sản phẩm' : `Sửa #${product?.id}`}
@@ -286,43 +286,47 @@ export default function AdminProductsPage() {
 
   return (
     <div className="space-y-6">
-      <AdminPageTitle title="Sản phẩm">
+      <AdminPageTitle subtitle="Thêm và sửa thông tin sản phẩm. Quản lý tồn kho theo size tại mục Tồn kho.">
         <button
           type="button"
           onClick={() => {
             setEditingProduct(undefined);
             setModal('create');
           }}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-secondary text-white font-tech text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-secondary/20 active:scale-95 transition-transform shrink-0"
+          className="admin-btn-primary shrink-0"
         >
           <Plus size={16} />
           Thêm sản phẩm
         </button>
       </AdminPageTitle>
 
-      {error && (
-        <div className="rounded-2xl bg-tertiary-container border border-tertiary/20 px-4 py-3 text-sm text-tertiary font-body">
-          {error}
-        </div>
-      )}
+      {error && <div className="admin-alert-error font-body">{error}</div>}
 
       {loading ? (
-        <p className="font-tech text-sm text-on-surface-variant">Đang tải...</p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="admin-card admin-card-static h-32 animate-pulse bg-slate-100" />
+          ))}
+        </div>
+      ) : products.length === 0 ? (
+        <div className="admin-card admin-card-static p-12 text-center">
+          <p className="font-tech text-sm text-slate-500">Chưa có sản phẩm. Thêm sản phẩm mới.</p>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {products.map((product) => (
             <div
               key={product.id}
-              className="glass-card rounded-2xl border border-outline-variant/20 p-3 md:p-4 flex gap-3 md:gap-4 hover:shadow-lg transition-shadow"
+              className="admin-card admin-card-static p-4 flex gap-4"
             >
-              <div className="relative w-20 h-20 md:w-24 md:h-24 shrink-0 rounded-xl overflow-hidden bg-surface-container-low">
+              <div className="relative w-24 h-24 shrink-0 rounded-xl overflow-hidden bg-slate-100 ring-1 ring-slate-200/80">
                 <img
                   src={product.thumbnail || '/images/products/pro1.png'}
                   alt=""
                   className="w-full h-full object-cover"
                 />
                 {lowStock(product) && (
-                  <span className="absolute top-1 left-1 px-1.5 py-0.5 bg-tertiary text-white text-[8px] font-tech uppercase font-bold rounded">
+                  <span className="absolute top-1 left-1 px-1.5 py-0.5 bg-amber-500 text-white text-[8px] font-tech uppercase font-bold rounded shadow-sm">
                     Sắp hết
                   </span>
                 )}
@@ -330,16 +334,16 @@ export default function AdminProductsPage() {
 
               <div className="flex-1 min-w-0 flex flex-col justify-between gap-2">
                 <div className="min-w-0">
-                  <h3 className="font-tech text-xs md:text-sm font-bold text-on-surface line-clamp-1 uppercase tracking-wide">
+                  <h3 className="font-tech text-sm font-bold text-slate-900 line-clamp-1 uppercase tracking-wide">
                     {product.name}
                   </h3>
-                  <p className="font-body text-[11px] text-on-surface-variant line-clamp-1 mt-0.5">
+                  <p className="font-body text-xs text-slate-500 line-clamp-1 mt-0.5">
                     {product.description}
                   </p>
-                  <p className="font-display text-lg md:text-xl text-secondary mt-1 leading-none">
+                  <p className="font-display text-xl text-secondary mt-1 leading-none">
                     {formatVND(product.price)}
                   </p>
-                  <p className="font-tech text-[9px] text-on-surface-variant mt-1 uppercase tracking-wider truncate">
+                  <p className="font-tech text-[9px] text-slate-400 mt-1 uppercase tracking-wider truncate">
                     {product.variants.map((v) => `${v.size}:${v.stock}`).join(' · ')}
                   </p>
                 </div>
@@ -351,7 +355,7 @@ export default function AdminProductsPage() {
                       setEditingProduct(product);
                       setModal('edit');
                     }}
-                    className="flex-1 inline-flex items-center justify-center gap-1 py-2 rounded-full border border-outline-variant font-tech text-[10px] font-bold uppercase tracking-widest text-on-surface hover:border-secondary transition-colors"
+                    className="flex-1 inline-flex items-center justify-center gap-1 py-2 rounded-full border border-slate-200 font-tech text-[10px] font-bold uppercase tracking-widest text-slate-700 hover:border-secondary hover:text-secondary transition-colors"
                   >
                     <Pencil size={13} />
                     Sửa
@@ -360,7 +364,7 @@ export default function AdminProductsPage() {
                     type="button"
                     disabled={deletingId === product.id}
                     onClick={() => void handleDelete(product.id)}
-                    className="inline-flex items-center justify-center px-3 py-2 rounded-full border border-tertiary/30 text-tertiary font-tech text-[10px] font-bold uppercase disabled:opacity-50 hover:bg-tertiary-container transition-colors"
+                    className="inline-flex items-center justify-center px-3 py-2 rounded-full border border-red-200 text-red-600 font-tech text-[10px] font-bold uppercase disabled:opacity-50 hover:bg-red-50 transition-colors"
                   >
                     <Trash2 size={13} />
                   </button>

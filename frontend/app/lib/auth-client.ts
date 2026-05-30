@@ -103,6 +103,14 @@ export async function fetchMe(): Promise<AuthUser> {
   return fetchCurrentUser(token);
 }
 
+export function displayNameFromProfile(
+  email: string,
+  fullName?: string | null
+): string {
+  if (fullName?.trim()) return fullName.trim();
+  return displayNameFromEmail(email);
+}
+
 export function displayNameFromEmail(email: string): string {
   const local = email.split("@")[0] ?? email;
   return local.replace(/[._-]/g, " ").trim().toUpperCase();
@@ -125,9 +133,11 @@ export function getStoredToken() {
 export function saveToken(token: string) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(AUTH_TOKEN_KEY, token);
+  window.dispatchEvent(new Event("vault-auth-changed"));
 }
 
 export function clearToken() {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(AUTH_TOKEN_KEY);
+  window.dispatchEvent(new Event("vault-auth-changed"));
 }
