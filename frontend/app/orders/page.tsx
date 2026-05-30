@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { useRouter } from 'next/navigation';
 import Header from '../components/Header';
-import { Search } from 'lucide-react';
+import { CheckCircle, Search } from 'lucide-react';
 import { clearToken, fetchCurrentUser, getStoredToken, type AuthUser } from '../lib/auth-client';
 import { fetchMyOrders } from '../lib/order-api';
 import { fetchVariantById } from '../lib/product-api';
@@ -18,6 +18,7 @@ import {
   normalizeOrderStatus,
   type OrderStatus,
 } from '../lib/order-utils';
+import { fetchMyReviews } from '../lib/review-api';
 import { formatVND } from '../lib/utils';
 import type { ApiOrder } from '../lib/types';
 
@@ -36,6 +37,7 @@ type DisplayOrder = {
   img: string;
   eta?: string;
   action?: string;
+  hasReviewed?: boolean;
 };
 
 const filters = ['TẤT CẢ', 'CHỜ XỬ LÝ', 'ĐANG GIAO', 'HOÀN THÀNH', 'ĐÃ HỦY'] as const;
@@ -55,7 +57,10 @@ function matchesFilter(statusKey: OrderStatus, filter: OrderFilter): boolean {
   return allowed.includes(statusKey);
 }
 
-async function mapOrdersToDisplay(orders: ApiOrder[]): Promise<DisplayOrder[]> {
+async function mapOrdersToDisplay(
+  orders: ApiOrder[],
+  reviewedOrderIds: Set<number>
+): Promise<DisplayOrder[]> {
   return Promise.all(
     orders.map(async (order) => {
       const firstItem = order.items[0];
@@ -91,7 +96,13 @@ async function mapOrdersToDisplay(orders: ApiOrder[]): Promise<DisplayOrder[]> {
         price: formatVND(order.totalAmount),
         img,
         eta: status === 'shipping' ? 'Đang vận chuyển' : undefined,
-        action: status === 'delivered' ? 'Đánh giá ngay' : undefined,
+        action:
+          status === 'delivered'
+            ? reviewedOrderIds.has(order.id)
+              ? 'Đã đánh giá'
+              : 'Đánh giá ngay'
+            : undefined,
+        hasReviewed: reviewedOrderIds.has(order.id),
       };
     })
   );
@@ -115,7 +126,18 @@ export default function OrderList() {
   });
 
   const refreshDisplay = useCallback(async (list: ApiOrder[]) => {
-    setOrders(await mapOrdersToDisplay(list));
+    let reviewedOrderIds = new Set<number>();
+    try {
+      const myReviews = await fetchMyReviews();
+      reviewedOrderIds = new Set(
+        myReviews
+          .map((r) => r.orderId)
+          .filter((id): id is number => id != null)
+      );
+    } catch {
+      reviewedOrderIds = new Set();
+    }
+    setOrders(await mapOrdersToDisplay(list, reviewedOrderIds));
   }, []);
 
   useEffect(() => {
@@ -291,9 +313,14 @@ export default function OrderList() {
                         e.stopPropagation();
                         router.push(`/review?orderId=${o.orderId}&variantId=${o.variantId}`);
                       }}
-                      className="border border-secondary text-secondary px-4 py-2 rounded-xl font-tech text-[10px] font-bold uppercase tracking-widest hover:bg-secondary/10 transition-all"
+                      className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl font-tech text-[10px] font-bold uppercase tracking-widest transition-all ${
+                        o.hasReviewed
+                          ? 'border border-outline-variant text-on-surface-variant bg-surface-container-low hover:bg-surface-container'
+                          : 'border border-secondary text-secondary hover:bg-secondary/10'
+                      }`}
                     >
-                      Đánh giá
+                      {o.hasReviewed && <CheckCircle size={12} className="shrink-0" />}
+                      {o.hasReviewed ? 'Đã đánh giá' : 'Đánh giá'}
                     </button>
                   )}
                   <button

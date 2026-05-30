@@ -32,6 +32,7 @@ model Review {
   id            Int      @id @default(autoincrement())
   userId        Int
   productId     Int
+  orderId       Int?     @unique
   rating        Int
   content       String
   height        Int?
