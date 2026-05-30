@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState, type ReactNode } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Header from '../components/Header';
 import {
   MapPin, CreditCard, ArrowRight, ChevronDown,
@@ -14,6 +14,9 @@ import { getStoredToken } from '../lib/auth-client';
 import { useProfile } from '../context/ProfileContext';
 import { formatVND } from '../lib/utils';
 import AddressSelector, { type AddressSelection } from '../components/AddressSelector';
+import { fetchVariantById } from '../lib/product-api';
+import { resolveAddressFromSaved, serializeProfileAddress } from '../lib/saved-address';
+import type { EnrichedCartItem } from '../lib/types';
 
 const SHIPPING_FEE = 30000;
 const FREE_SHIPPING_THRESHOLD = 500000;
@@ -41,9 +44,27 @@ const paymentMethods: PaymentMethodOption[] = [
   },
 ];
 
-export default function Checkout() {
+function CheckoutContent() {
   const router = useRouter();
-  const { items, subtotal, refreshCart } = useCart();
+  const searchParams = useSearchParams();
+  const isBuyNow = searchParams.get('buyNow') === '1';
+  const buyNowVariantId = Number(searchParams.get('variantId'));
+  const buyNowQuantity = Math.max(1, Number(searchParams.get('quantity')) || 1);
+  const buyNowProductId = searchParams.get('productId');
+  const buyNowValid =
+    isBuyNow && Number.isFinite(buyNowVariantId) && buyNowVariantId > 0;
+
+  const { items: cartItems, subtotal: cartSubtotal, refreshCart } = useCart();
+  const [mounted, setMounted] = useState(false);
+  const [buyNowItem, setBuyNowItem] = useState<EnrichedCartItem | null>(null);
+  const [buyNowLoading, setBuyNowLoading] = useState(false);
+  const [buyNowError, setBuyNowError] = useState('');
+  const [addressHydrated, setAddressHydrated] = useState(false);
+
+  const items = buyNowValid && buyNowItem ? [buyNowItem] : cartItems;
+  const subtotal = buyNowValid && buyNowItem
+    ? buyNowItem.price * buyNowItem.quantity
+    : cartSubtotal;
   const { profile, updateProfile, loading: profileLoading } = useProfile();
   const [selectedPayment, setSelectedPayment] = useState('cod');
   const [promoCode, setPromoCode] = useState('');
@@ -65,43 +86,100 @@ export default function Checkout() {
     fullAddress: '',
   });
   const [addressError, setAddressError] = useState('');
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     const token = getStoredToken();
     if (!token) {
-      router.push('/login?redirect=/checkout');
+      const redirect = buyNowValid
+        ? `/checkout?buyNow=1&variantId=${buyNowVariantId}&quantity=${buyNowQuantity}${buyNowProductId ? `&productId=${buyNowProductId}` : ''}`
+        : '/checkout';
+      router.push(`/login?redirect=${encodeURIComponent(redirect)}`);
+      return;
+    }
+    if (buyNowValid) {
+      setBuyNowLoading(true);
+      setBuyNowError('');
+      void fetchVariantById(buyNowVariantId)
+        .then((variant) => {
+          setBuyNowItem({
+            id: 0,
+            variantId: variant.id,
+            quantity: buyNowQuantity,
+            size: variant.size,
+            name: variant.product.name,
+            price: variant.product.price,
+            img: variant.product.thumbnail || '/images/products/pro1.png',
+            stock: variant.stock,
+          });
+        })
+        .catch((err) => {
+          setBuyNowError(
+            err instanceof Error ? err.message : 'Không tải được sản phẩm'
+          );
+          setBuyNowItem(null);
+        })
+        .finally(() => {
+          setBuyNowLoading(false);
+          setCartChecked(true);
+        });
       return;
     }
     void refreshCart().finally(() => setCartChecked(true));
-  }, [router, refreshCart]);
+  }, [
+    router,
+    refreshCart,
+    buyNowValid,
+    buyNowVariantId,
+    buyNowQuantity,
+    buyNowProductId,
+  ]);
 
   useEffect(() => {
     if (profileLoading) return;
     setShippingName(profile.fullName ?? '');
     setShippingPhone(profile.phone ?? '');
-    if (profile.address) {
-      setAddressSelection((prev) => ({
-        ...prev,
-        street: profile.address ?? prev.street,
-        fullAddress: profile.address ?? prev.fullAddress,
-      }));
+
+    if (!profile.address?.trim()) {
+      setAddressHydrated(true);
+      return;
     }
+
+    let cancelled = false;
+    void resolveAddressFromSaved(profile.address)
+      .then((resolved) => {
+        if (cancelled || !resolved) return;
+        setAddressSelection(resolved);
+      })
+      .finally(() => {
+        if (!cancelled) setAddressHydrated(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [profile.fullName, profile.phone, profile.address, profileLoading]);
 
   const persistContactInfo = async () => {
-    const fullAddress = addressSelection.fullAddress.trim();
+    const savedAddress = addressSelection.fullAddress.trim()
+      ? serializeProfileAddress(addressSelection)
+      : profile.address || undefined;
     await updateProfile({
       fullName: shippingName.trim(),
       phone: shippingPhone.trim(),
-      address: fullAddress || profile.address || undefined,
+      address: savedAddress,
     });
   };
 
   useEffect(() => {
-    if (!cartChecked || placing) return;
+    if (!cartChecked || placing || buyNowValid) return;
     if (items.length === 0 && getStoredToken()) {
       router.push('/cart');
     }
-  }, [items.length, cartChecked, placing, router]);
+  }, [items.length, cartChecked, placing, router, buyNowValid]);
 
   const shippingFee = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
   const discountAmount = promoResult?.discountAmount ?? 0;
@@ -154,6 +232,9 @@ export default function Checkout() {
         shippingAddress: addressSelection.fullAddress,
         paymentMethod: selectedPayment,
         promoCode: promoResult ? promoCode : undefined,
+        ...(buyNowValid
+          ? { buyNow: { variantId: buyNowVariantId, quantity: buyNowQuantity } }
+          : {}),
       });
       sessionStorage.setItem('lastOrder', JSON.stringify(order));
       router.replace(`/order-success?orderId=${order.id}`);
@@ -164,7 +245,54 @@ export default function Checkout() {
     }
   };
 
+  const pageLoading =
+    !mounted ||
+    !cartChecked ||
+    profileLoading ||
+    !addressHydrated ||
+    (buyNowValid && buyNowLoading);
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="font-tech text-sm text-on-surface-variant">Đang tải...</p>
+      </div>
+    );
+  }
+
   if (!getStoredToken()) return null;
+
+  if (buyNowValid && (buyNowError || (!buyNowLoading && !buyNowItem))) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header title="THANH TOÁN" />
+        <main className="pt-24 px-5 text-center">
+          <p className="font-body text-sm text-on-surface-variant mb-6">
+            {buyNowError || 'Không tải được sản phẩm'}
+          </p>
+          <button
+            type="button"
+            onClick={() =>
+              router.push(buyNowProductId ? `/product/${buyNowProductId}` : '/product')
+            }
+            className="font-tech text-xs text-secondary uppercase tracking-widest border-b border-secondary"
+          >
+            Quay lại sản phẩm
+          </button>
+        </main>
+      </div>
+    );
+  }
+
+  if (pageLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="font-tech text-sm text-on-surface-variant">
+          {buyNowValid ? 'Đang tải đơn mua ngay...' : 'Đang tải...'}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-32 lg:pb-16">
@@ -174,10 +302,23 @@ export default function Checkout() {
 
         {/* Step indicator */}
         <div className="flex items-center gap-3 mb-10 font-tech text-[10px] uppercase tracking-widest">
-          <button onClick={() => router.push('/cart')} className="text-on-surface-variant hover:text-secondary transition-colors flex items-center gap-1.5">
-            <span className="w-5 h-5 rounded-full border border-outline-variant flex items-center justify-center text-[9px] font-bold">1</span>
-            Giỏ hàng
-          </button>
+          {buyNowValid ? (
+            <button
+              type="button"
+              onClick={() =>
+                router.push(buyNowProductId ? `/product/${buyNowProductId}` : '/product')
+              }
+              className="text-on-surface-variant hover:text-secondary transition-colors flex items-center gap-1.5"
+            >
+              <span className="w-5 h-5 rounded-full border border-outline-variant flex items-center justify-center text-[9px] font-bold">1</span>
+              Sản phẩm
+            </button>
+          ) : (
+            <button type="button" onClick={() => router.push('/cart')} className="text-on-surface-variant hover:text-secondary transition-colors flex items-center gap-1.5">
+              <span className="w-5 h-5 rounded-full border border-outline-variant flex items-center justify-center text-[9px] font-bold">1</span>
+              Giỏ hàng
+            </button>
+          )}
           <div className="flex-1 h-px bg-outline-variant/30 max-w-12" />
           <span className="text-secondary font-bold flex items-center gap-1.5">
             <span className="w-5 h-5 rounded-full bg-secondary text-white flex items-center justify-center text-[9px] font-bold">2</span>
@@ -434,7 +575,7 @@ export default function Checkout() {
               {/* CTA */}
               <button
                 onClick={() => void handlePlaceOrder()}
-                disabled={placing || items.length === 0}
+                disabled={placing || items.length === 0 || buyNowLoading}
                 className="w-full h-14 vault-btn-primary rounded-full flex items-center justify-center gap-3 active:scale-[0.98] transition-all holographic-sweep group font-tech text-xs font-bold uppercase tracking-[0.15em] disabled:opacity-50"
               >
                 {placing ? 'ĐANG XỬ LÝ...' : `ĐẶT HÀNG · ${formatVND(Math.max(total, 0))}`}
@@ -458,7 +599,7 @@ export default function Checkout() {
         </div>
         <button
           onClick={() => void handlePlaceOrder()}
-          disabled={placing || items.length === 0}
+          disabled={placing || items.length === 0 || buyNowLoading}
           className="w-full h-14 vault-btn-primary rounded-full flex items-center justify-center gap-3 active:scale-[0.98] transition-all group font-tech text-xs font-bold uppercase tracking-[0.15em] disabled:opacity-50"
         >
           {placing ? 'ĐANG XỬ LÝ...' : 'ĐẶT HÀNG NGAY'}
@@ -466,5 +607,19 @@ export default function Checkout() {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function Checkout() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <p className="font-tech text-sm text-on-surface-variant">Đang tải...</p>
+        </div>
+      }
+    >
+      <CheckoutContent />
+    </Suspense>
   );
 }

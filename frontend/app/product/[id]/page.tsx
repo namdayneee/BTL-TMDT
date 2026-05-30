@@ -291,18 +291,14 @@ export default function ProductDetail() {
     }
   };
 
-  const handleBuyNow = async () => {
+  const handleBuyNow = () => {
     if (!product || !selectedVariant || selectedVariant.stock <= 0) return;
     if (!requireAuth()) return;
     setBuying(true);
-    try {
-      await addItem(selectedVariant.id, 1);
-      router.push('/checkout');
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Không thể mua ngay');
-    } finally {
-      setBuying(false);
-    }
+    router.push(
+      `/checkout?buyNow=1&variantId=${selectedVariant.id}&quantity=1&productId=${productId}`
+    );
+    setBuying(false);
   };
 
   if (loading) {

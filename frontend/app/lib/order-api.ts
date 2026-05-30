@@ -10,6 +10,8 @@ export type CheckoutPayload = {
   shippingAddress?: string;
   paymentMethod?: string;
   promoCode?: string;
+  /** Chỉ thanh toán một biến thể — không gộp với giỏ hàng */
+  buyNow?: { variantId: number; quantity?: number };
 };
 
 export async function checkoutOrder(payload: CheckoutPayload = {}): Promise<ApiOrder> {
