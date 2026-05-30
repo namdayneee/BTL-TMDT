@@ -21,6 +21,9 @@ const emptyVariant = (): VariantRow => ({ size: '', stock: '0' });
 const inputClass =
   'w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-secondary transition-all py-3 px-3 outline-none font-body text-sm text-on-surface placeholder:text-on-surface-variant/40 rounded-t-lg';
 
+const variantInputClass =
+  'bg-surface-container-low border-b-2 border-outline-variant focus:border-secondary transition-all py-3 px-3 outline-none font-body text-sm text-on-surface placeholder:text-on-surface-variant/40 rounded-t-lg';
+
 function ProductFormModal({
   mode,
   product,
@@ -144,30 +147,41 @@ function ProductFormModal({
                   + Thêm size
                 </button>
               </div>
+              <div className="grid grid-cols-[1fr_5.5rem] gap-x-2 gap-y-1 mb-1 px-0.5">
+                <span className="font-tech text-[9px] text-on-surface-variant uppercase tracking-widest">
+                  Size
+                </span>
+                <span className="font-tech text-[9px] text-on-surface-variant uppercase tracking-widest text-center">
+                  Tồn
+                </span>
+              </div>
               <div className="space-y-2">
                 {variants.map((v, i) => (
-                  <div key={i} className="flex gap-2">
+                  <div key={i} className="flex gap-2 items-center">
                     <input
-                      placeholder="Size (M, L...)"
+                      type="text"
+                      inputMode="text"
+                      autoComplete="off"
+                      placeholder="VD: S, M, L"
                       value={v.size}
                       onChange={(e) => {
                         const next = [...variants];
                         next[i] = { ...next[i], size: e.target.value };
                         setVariants(next);
                       }}
-                      className={`flex-1 ${inputClass}`}
+                      className={`flex-1 min-w-0 ${variantInputClass}`}
                     />
                     <input
                       type="number"
                       min={0}
-                      placeholder="Tồn"
+                      placeholder="0"
                       value={v.stock}
                       onChange={(e) => {
                         const next = [...variants];
                         next[i] = { ...next[i], stock: e.target.value };
                         setVariants(next);
                       }}
-                      className={`w-24 ${inputClass}`}
+                      className={`w-22 shrink-0 ${variantInputClass}`}
                     />
                     {variants.length > 1 && (
                       <button

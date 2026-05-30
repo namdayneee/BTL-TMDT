@@ -4,8 +4,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Header from '../../components/Header';
 import { ShoppingCart, CheckCircle, Ruler, Info, QrCode, Zap, X, Loader2 } from 'lucide-react';
+import { ProductRatingBadge } from '../../components/ProductReviewsSection';
 import { fetchProductById, fetchProducts } from '../../lib/product-api';
-import { mapApiProduct, type DisplayProduct, type ApiProductVariant, type SizingRecommendation } from '../../lib/types';
+import { fetchProductReviews } from '../../lib/review-api';
+import { mapApiProduct, type DisplayProduct, type ApiProductVariant, type ApiReview, type SizingRecommendation } from '../../lib/types';
 import { useCart } from '../../context/CartContext';
 import { getStoredToken } from '../../lib/auth-client';
 import { recommendSize } from '../../lib/sizing-api';
@@ -213,6 +215,7 @@ function SizingModal({
 
 export default function ProductDetail() {
   const [product, setProduct] = useState<DisplayProduct | null>(null);
+  const [reviews, setReviews] = useState<ApiReview[]>([]);
   const [related, setRelated] = useState<DisplayProduct[]>([]);
   const [selectedSize, setSelectedSize] = useState('');
   const [loading, setLoading] = useState(true);
@@ -246,6 +249,17 @@ export default function ProductDetail() {
         setProduct({ ...mapped, variants });
         setSelectedSize(variants.find((v) => v.stock > 0)?.size || variants[0]?.size || '');
         setRelated(all.filter((p) => String(p.id) !== productId).map(mapApiProduct).slice(0, 4));
+
+        if (detail.reviews?.length) {
+          setReviews(detail.reviews);
+        } else {
+          try {
+            const productReviews = await fetchProductReviews(Number(productId));
+            setReviews(productReviews);
+          } catch {
+            setReviews([]);
+          }
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Không tải được sản phẩm');
       } finally {
@@ -376,7 +390,10 @@ export default function ProductDetail() {
               </span>
             </div>
 
-            <p className="font-display text-3xl text-on-surface mb-6">{product.price}</p>
+            <p className="font-display text-3xl text-on-surface mb-2">{product.price}</p>
+            <div className="mb-6">
+              <ProductRatingBadge productId={productId} reviews={reviews} />
+            </div>
 
             {/* Size */}
             <div className="mb-6">
