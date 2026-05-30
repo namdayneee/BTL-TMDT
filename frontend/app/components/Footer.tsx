@@ -30,6 +30,9 @@ const socialIcons = [
   { Icon: Hexagon, label: 'Token' },
 ];
 
+const MOIT_REGISTRATION_URL =
+  process.env.NEXT_PUBLIC_MOIT_REGISTRATION_URL ?? 'http://online.gov.vn/';
+
 export default function Footer() {
   const router = useRouter();
   const pathname = usePathname();
@@ -104,6 +107,19 @@ export default function Footer() {
                 <ArrowRight size={14} />
               </button>
             </div>
+            <a
+              href={MOIT_REGISTRATION_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block mt-4 opacity-90 hover:opacity-100 transition-opacity"
+              title="Đã thông báo Bộ Công Thương"
+            >
+              <img
+                src="/images/logo-bo-cong-thuong.png"
+                alt="Đã thông báo Bộ Công Thương"
+                className="h-10 w-auto"
+              />
+            </a>
           </div>
         </div>
 
