@@ -14,10 +14,12 @@ import {
   AlertCircle,
   Loader2,
   Star,
+  CheckCircle,
 } from 'lucide-react';
 import { clearToken, fetchCurrentUser, getStoredToken, type AuthUser } from '../../lib/auth-client';
 import { fetchOrderById } from '../../lib/order-api';
 import { fetchVariantById } from '../../lib/product-api';
+import { fetchReviewByOrder } from '../../lib/review-api';
 import {
   joinOrderRoom,
   joinUserOrdersRoom,
@@ -52,6 +54,7 @@ export default function OrderDetail() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [hasReviewed, setHasReviewed] = useState(false);
 
   const loadOrder = useCallback(async () => {
     const data = await fetchOrderById(orderIdParam);
@@ -90,6 +93,17 @@ export default function OrderDetail() {
         size: '—',
         lineTotal: firstItem.price * firstItem.quantity,
       });
+    }
+
+    if (normalized.status === 'delivered') {
+      try {
+        const review = await fetchReviewByOrder(normalized.id);
+        setHasReviewed(!!review);
+      } catch {
+        setHasReviewed(false);
+      }
+    } else {
+      setHasReviewed(false);
     }
   }, [orderIdParam]);
 
@@ -375,10 +389,14 @@ export default function OrderDetail() {
                   onClick={() =>
                     router.push(`/review?orderId=${order.id}&variantId=${firstVariantId}`)
                   }
-                  className="w-full vault-btn-primary h-14 rounded-2xl font-tech text-xs font-bold uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all active:scale-95"
+                  className={`w-full h-14 rounded-2xl font-tech text-xs font-bold uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all active:scale-95 ${
+                    hasReviewed
+                      ? 'border-2 border-outline-variant text-on-surface-variant bg-surface-container-low hover:bg-surface-container'
+                      : 'vault-btn-primary'
+                  }`}
                 >
-                  <Star size={18} />
-                  Đánh giá sản phẩm
+                  {hasReviewed ? <CheckCircle size={18} /> : <Star size={18} />}
+                  {hasReviewed ? 'Đã đánh giá — xem / sửa' : 'Đánh giá sản phẩm'}
                 </button>
               )}
               <button

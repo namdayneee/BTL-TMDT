@@ -1,6 +1,11 @@
 import prisma from "../utils/prisma.js";
 
 export const createProduct = async (data) => {
+  const variants = (data.variants ?? []).map((v) => ({
+    size: String(v.size ?? "").trim(),
+    stock: Number(v.stock) || 0,
+  }));
+
   return prisma.product.create({
     data: {
       name: data.name,
@@ -9,7 +14,7 @@ export const createProduct = async (data) => {
       thumbnail: data.thumbnail,
 
       variants: {
-        create: data.variants,
+        create: variants,
       },
     },
 
@@ -120,4 +125,57 @@ export const restoreStockBatch = async (items) => {
       })
     )
   );
+};
+
+export const updateProductVariants = async (productId, variants) => {
+  const product = await prisma.product.findUnique({
+    where: { id: Number(productId) },
+    include: { variants: true },
+  });
+
+  if (!product) {
+    throw new Error("Không tìm thấy sản phẩm");
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const updated = [];
+
+    for (const item of variants) {
+      if (item.id) {
+        const existing = product.variants.find((v) => v.id === Number(item.id));
+        if (!existing) {
+          throw new Error(`Biến thể #${item.id} không thuộc sản phẩm này`);
+        }
+        const row = await tx.productVariant.update({
+          where: { id: Number(item.id) },
+          data: {
+            stock: Math.max(0, Number(item.stock) || 0),
+            ...(item.size ? { size: String(item.size).trim() } : {}),
+          },
+        });
+        updated.push(row);
+      } else if (item.size) {
+        const size = String(item.size).trim();
+        const duplicate = product.variants.some(
+          (v) => v.size.toLowerCase() === size.toLowerCase()
+        );
+        if (duplicate) {
+          throw new Error(`Size "${size}" đã tồn tại`);
+        }
+        const row = await tx.productVariant.create({
+          data: {
+            productId: Number(productId),
+            size,
+            stock: Math.max(0, Number(item.stock) || 0),
+          },
+        });
+        updated.push(row);
+      }
+    }
+
+    return tx.product.findUnique({
+      where: { id: Number(productId) },
+      include: { variants: true },
+    });
+  });
 };

@@ -3,6 +3,7 @@ import prisma from "../utils/prisma.js";
 import {
   registerUser,
   loginUser,
+  listUsers,
 } from "../services/auth.service.js";
 
 import {
@@ -47,6 +48,15 @@ export const login = async (req, res) => {
     res.status(400).json({
       message: error.message,
     });
+  }
+};
+
+export const getUsers = async (req, res) => {
+  try {
+    const users = await listUsers();
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
 

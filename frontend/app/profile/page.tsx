@@ -3,25 +3,25 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '../components/Header';
-import { Rocket, ShieldCheck, Trophy, Ruler, Save, Loader2 } from 'lucide-react';
+import { Rocket, ShieldCheck, Trophy, Ruler, Save, Loader2, User, Pencil } from 'lucide-react';
 import {
   clearToken,
-  displayNameFromEmail,
+  displayNameFromProfile,
   fetchMe,
   getStoredToken,
   isAdminRole,
   roleBadgeLabel,
   type AuthUser,
 } from '../lib/auth-client';
+import { useProfile } from '../context/ProfileContext';
 import { fetchMyOrders } from '../lib/order-api';
 import { fetchVariantById } from '../lib/product-api';
-import { fetchMyProfile, updateMyProfile } from '../lib/profile-api';
 import {
   joinUserOrdersRoom,
   subscribeOrderStatusUpdates,
 } from '../lib/order-socket';
 import { getOrderStatusDisplay } from '../lib/order-utils';
-import type { ApiOrder, UserProfile } from '../lib/types';
+import type { ApiOrder } from '../lib/types';
 
 type OrderPreview = {
   id: string;
@@ -72,7 +72,7 @@ export default function Profile() {
   const [authState, setAuthState] = useState<'checking' | 'authenticated' | 'unauthenticated'>('checking');
   const [user, setUser] = useState<AuthUser | null>(null);
   const [latestOrder, setLatestOrder] = useState<OrderPreview | null>(null);
-  const [profile, setProfile] = useState<UserProfile>({});
+  const { profile, setProfileLocal, updateProfile } = useProfile();
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
 
@@ -89,9 +89,6 @@ export default function Profile() {
         const currentUser = await fetchMe();
         setUser(currentUser);
         setAuthState('authenticated');
-
-        // Load profile
-        void fetchMyProfile().then((p) => setProfile(p)).catch(() => {});
 
         try {
           const orders = await fetchMyOrders();
@@ -163,22 +160,17 @@ export default function Profile() {
         <section className="flex flex-col items-center text-center mb-10 lg:mb-12">
           <div className="relative group">
             <div className="absolute -inset-1.5 bg-linear-to-r from-secondary via-secondary-fixed-dim to-secondary rounded-full blur opacity-30 group-hover:opacity-60 transition duration-1000"></div>
-            <div className="relative w-28 h-28 md:w-32 md:h-32 rounded-full overflow-hidden border-2 border-white/50 bg-surface-container shadow-2xl">
-              <img
-                className="w-full h-full object-cover"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmiLKaoeRW1ox6EnnCOTdjN0fFEqtyEEaOr_Va4PBzLbH0IQ_I44F6a7bIAgUfoNdkw6OoVEjqWnfqaNWR0gVkSiZyqC0xeu_nhtA4fdeGgIlMjz1iQg-bzKdPEVSimKK-y4MPIhWPRL0xc3dDJSLsjG08medXE7dj4b5--51ixTEUQkpQAOFRZsWNeXJcUoX09K5hhkPywfxVs-6mmVdfDt3Q4kznmBTt2abiOncwm1NwkZPjjG9uhYKV8Y0O6PihrCiQkjEA_vCI"
-                alt="Profile"
-              />
+            <div className="relative w-28 h-28 md:w-32 md:h-32 rounded-full border-2 border-white/50 bg-surface-container shadow-2xl flex items-center justify-center">
+              <User strokeWidth={1.5} className="w-14 h-14 md:w-16 md:h-16 text-on-surface-variant/50" />
             </div>
             <div className="absolute -bottom-1 right-2 bg-secondary text-white rounded-full p-1.5 border-2 border-surface flex items-center justify-center">
               <ShieldCheck size={14} className="fill-current" />
             </div>
           </div>
           <h1 className="mt-6 font-display text-4xl md:text-5xl uppercase tracking-widest text-on-surface">
-            {user ? displayNameFromEmail(user.email) : '—'}
+            {user ? displayNameFromProfile(user.email, profile.fullName) : '—'}
           </h1>
-          <p className="mt-2 font-body text-sm text-on-surface-variant">{user?.email}</p>
-          <div className="mt-2 text-secondary bg-secondary/10 px-4 py-1.5 rounded-full border border-secondary/20 font-tech text-[10px] font-bold uppercase tracking-widest">
+          <div className="mt-4 text-secondary bg-secondary/10 px-4 py-1.5 rounded-full border border-secondary/20 font-tech text-[10px] font-bold uppercase tracking-widest">
             {user ? roleBadgeLabel(user.role) : 'THÀNH VIÊN HẠNG BLACK'}
           </div>
           {user && isAdminRole(user.role) && (
@@ -236,6 +228,51 @@ export default function Profile() {
               </div>
             </section>
 
+            {/* Contact info */}
+            <section className="space-y-4">
+              <div className="flex items-center justify-between px-2">
+                <h2 className="font-tech text-[10px] font-bold uppercase tracking-widest opacity-60">
+                  THÔNG TIN LIÊN HỆ
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => router.push('/profile/edit')}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-secondary/40 text-secondary font-tech text-[9px] font-bold uppercase tracking-widest hover:bg-secondary hover:text-white transition-all"
+                >
+                  <Pencil size={12} />
+                  Chỉnh sửa
+                </button>
+              </div>
+              <div className="bg-surface-container-highest/20 rounded-3xl p-8 border border-outline-variant/20 flex flex-col gap-5">
+                <div className="flex items-start gap-5">
+                  <div className="w-12 h-12 bg-secondary shrink-0 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-secondary/20">
+                    <User size={24} />
+                  </div>
+                  <p className="font-body text-[11px] leading-relaxed text-on-surface-variant opacity-80">
+                    Họ tên và số điện thoại dùng chung cho thanh toán và đơn hàng.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-outline-variant/10 pt-5">
+                  <div>
+                    <p className="font-tech text-[9px] opacity-50 uppercase tracking-widest font-bold mb-1">
+                      Họ và tên
+                    </p>
+                    <p className="font-body text-sm text-on-surface font-medium">
+                      {profile.fullName?.trim() || '—'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-tech text-[9px] opacity-50 uppercase tracking-widest font-bold mb-1">
+                      Số điện thoại
+                    </p>
+                    <p className="font-body text-sm text-on-surface font-medium">
+                      {profile.phone?.trim() || '—'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
             {/* Sizing Profile */}
             <section className="space-y-4">
               <h2 className="font-tech text-[10px] font-bold uppercase tracking-widest opacity-60 px-2">HỒ SƠ KÍCH CỠ VAULT</h2>
@@ -260,7 +297,11 @@ export default function Profile() {
                     <input
                       type="number"
                       value={profile.height ?? ''}
-                      onChange={(e) => setProfile(p => ({ ...p, height: e.target.value ? Number(e.target.value) : null }))}
+                      onChange={(e) =>
+                        setProfileLocal({
+                          height: e.target.value ? Number(e.target.value) : null,
+                        })
+                      }
                       placeholder="170"
                       className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-3 font-tech text-sm outline-none focus:border-secondary transition-all text-center"
                     />
@@ -270,7 +311,11 @@ export default function Profile() {
                     <input
                       type="number"
                       value={profile.weight ?? ''}
-                      onChange={(e) => setProfile(p => ({ ...p, weight: e.target.value ? Number(e.target.value) : null }))}
+                      onChange={(e) =>
+                        setProfileLocal({
+                          weight: e.target.value ? Number(e.target.value) : null,
+                        })
+                      }
                       placeholder="65"
                       className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-3 font-tech text-sm outline-none focus:border-secondary transition-all text-center"
                     />
@@ -282,7 +327,7 @@ export default function Profile() {
                     {FIT_PREFERENCE_OPTIONS.map((f) => (
                       <button
                         key={f.value}
-                        onClick={() => setProfile(p => ({ ...p, fitPreference: f.value }))}
+                        onClick={() => setProfileLocal({ fitPreference: f.value })}
                         className={`p-2.5 rounded-xl border-2 transition-all text-center ${profile.fitPreference === f.value ? 'border-secondary bg-secondary/5 text-secondary' : 'border-outline-variant/20 text-on-surface-variant hover:border-secondary/40'}`}
                       >
                         <span className="font-tech text-[9px] font-bold uppercase">{f.label}</span>
@@ -298,8 +343,11 @@ export default function Profile() {
                     setProfileSaving(true);
                     setProfileSaved(false);
                     try {
-                      const updated = await updateMyProfile(profile);
-                      setProfile(updated);
+                      await updateProfile({
+                        height: profile.height,
+                        weight: profile.weight,
+                        fitPreference: profile.fitPreference,
+                      });
                       setProfileSaved(true);
                       setTimeout(() => setProfileSaved(false), 3000);
                     } catch { /* ignore */ }

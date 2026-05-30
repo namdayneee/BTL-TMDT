@@ -9,6 +9,7 @@ import {
   getVariantById,
   decrementStockBatch,
   restoreStockBatch,
+  updateProductVariants,
 } from "../controllers/product.controller.js";
 
 import { authenticate } from "../middleware/auth.middleware.js";
@@ -38,6 +39,13 @@ router.post(
 router.get(
   "/variants/:id",
   getVariantById
+);
+
+router.put(
+  "/:id/variants",
+  authenticate,
+  authorize("admin"),
+  updateProductVariants
 );
 
 router.get("/:id", getProduct);
