@@ -49,6 +49,10 @@ export default function Header({ title, showBack }: HeaderProps) {
     };
 
     void validateAuth();
+
+    const onAuthChange = () => void validateAuth();
+    window.addEventListener('vault-auth-changed', onAuthChange);
+    return () => window.removeEventListener('vault-auth-changed', onAuthChange);
   }, [pathname, refreshCart]);
 
   const navLinks = isAdmin
@@ -157,9 +161,16 @@ export default function Header({ title, showBack }: HeaderProps) {
           <div className="ml-auto flex items-center gap-3 md:gap-4 z-50">
             <button
               onClick={() => setShowAuthSelect(!showAuthSelect)}
-              className="text-zinc-900 hover:opacity-80 active:scale-95 transition-all duration-200"
+              className="hover:opacity-80 active:scale-95 transition-all duration-200"
+              aria-label={isAuthenticated ? 'Tài khoản' : 'Đăng nhập'}
             >
-              <User size={22} />
+              {isAuthenticated ? (
+                <span className="w-9 h-9 rounded-full bg-linear-to-br from-secondary to-accent-cyan flex items-center justify-center text-white shadow-md shadow-secondary/25 ring-2 ring-white">
+                  <User size={18} strokeWidth={2.25} />
+                </span>
+              ) : (
+                <User size={22} className="text-zinc-900" />
+              )}
             </button>
             {showAuthSelect && (
               <div
@@ -242,9 +253,12 @@ export default function Header({ title, showBack }: HeaderProps) {
             ) : (
               <button 
                 onClick={() => { router.push('/profile'); setIsOpen(false); }}
-                className="flex items-center gap-1.5 text-zinc-600 font-medium active:text-zinc-900"
+                className="flex items-center gap-2 text-zinc-600 font-medium active:text-zinc-900"
               >
-                <User size={14} /> Hồ sơ của tôi
+                <span className="w-7 h-7 rounded-full bg-linear-to-br from-secondary to-accent-cyan flex items-center justify-center text-white shrink-0">
+                  <User size={14} strokeWidth={2.25} />
+                </span>
+                Hồ sơ của tôi
               </button>
             )}
           </div>

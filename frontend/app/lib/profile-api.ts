@@ -20,3 +20,19 @@ export async function updateMyProfile(data: Partial<UserProfile>): Promise<UserP
     body: JSON.stringify(data),
   });
 }
+
+const ADMIN_USERS_PATH = process.env.NEXT_PUBLIC_ADMIN_USERS_PATH;
+
+export async function updateUserProfileAsAdmin(
+  userId: number,
+  data: Pick<UserProfile, 'fullName' | 'phone' | 'address'>
+): Promise<UserProfile> {
+  if (!ADMIN_USERS_PATH) {
+    throw new Error('NEXT_PUBLIC_ADMIN_USERS_PATH chưa được cấu hình');
+  }
+  return apiFetch<UserProfile>(`${ADMIN_USERS_PATH}/${userId}/profile`, {
+    method: 'PATCH',
+    auth: true,
+    body: JSON.stringify(data),
+  });
+}

@@ -28,6 +28,25 @@ export const registerUser = async (email, password) => {
   };
 };
 
+export const listUsers = async () => {
+  return prisma.user.findMany({
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      email: true,
+      role: true,
+      createdAt: true,
+      profile: {
+        select: {
+          fullName: true,
+          phone: true,
+          address: true,
+        },
+      },
+    },
+  });
+};
+
 export const loginUser = async (email, password) => {
   const user = await prisma.user.findUnique({
     where: { email },

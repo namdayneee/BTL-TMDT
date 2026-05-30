@@ -7,7 +7,9 @@ import {
   LayoutDashboard,
   Package,
   ShoppingCart,
-  Ruler,
+  Warehouse,
+  Users,
+  Ticket,
   Store,
   LogOut,
   Menu,
@@ -25,14 +27,18 @@ const navItems = [
   { href: '/admin', label: 'Tổng quan', icon: LayoutDashboard, exact: true },
   { href: '/admin/orders', label: 'Đơn hàng', icon: ShoppingCart },
   { href: '/admin/products', label: 'Sản phẩm', icon: Package },
-  { href: '/admin/sizing', label: 'Sizing', icon: Ruler },
+  { href: '/admin/inventory', label: 'Tồn kho', icon: Warehouse },
+  { href: '/admin/users', label: 'Khách hàng', icon: Users },
+  { href: '/admin/vouchers', label: 'Voucher', icon: Ticket },
 ];
 
 const pageTitles: Record<string, string> = {
   '/admin': 'Tổng quan',
   '/admin/orders': 'Đơn hàng',
   '/admin/products': 'Sản phẩm',
-  '/admin/sizing': 'Sizing',
+  '/admin/inventory': 'Tồn kho',
+  '/admin/users': 'Khách hàng',
+  '/admin/vouchers': 'Voucher',
 };
 
 function userInitials(email: string) {

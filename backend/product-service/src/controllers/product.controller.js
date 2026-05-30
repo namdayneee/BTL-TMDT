@@ -121,6 +121,24 @@ export const restoreStockBatch = async (req, res) => {
   }
 };
 
+export const updateProductVariants = async (req, res) => {
+  try {
+    const { variants } = req.body;
+    if (!Array.isArray(variants)) {
+      return res.status(400).json({ message: "variants phải là mảng" });
+    }
+
+    const product = await productService.updateProductVariants(
+      req.params.id,
+      variants
+    );
+
+    res.json(product);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 export const getVariantById = async (
   req,
   res
